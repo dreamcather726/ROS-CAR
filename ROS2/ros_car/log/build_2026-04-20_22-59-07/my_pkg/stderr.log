@@ -1,0 +1,7 @@
+/usr/lib/python3/dist-packages/setuptools/_distutils/dist.py:270: UserWarning: Unknown distribution option: 'tests_require'
+  warnings.warn(msg)
+  File "/home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg/hello_node.py", line 4
+    class HelloNode(Node):def __init__(self):super().__init__("hello_node")
+                          ^^^
+SyntaxError: invalid syntax
+

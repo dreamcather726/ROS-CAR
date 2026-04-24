@@ -1,0 +1,3 @@
+[console_scripts]
+gui_node = my_pkg.gui_node:main
+hello_node = my_pkg.hello_node:main

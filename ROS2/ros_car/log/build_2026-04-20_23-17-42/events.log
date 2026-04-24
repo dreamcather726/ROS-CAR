@@ -1,0 +1,170 @@
+[0.000000] (-) TimerEvent: {}
+[0.001993] (my_pkg) JobQueued: {'identifier': 'my_pkg', 'dependencies': OrderedDict()}
+[0.004277] (my_pkg) JobStarted: {'identifier': 'my_pkg'}
+[0.098347] (-) TimerEvent: {}
+[0.199958] (-) TimerEvent: {}
+[0.301226] (-) TimerEvent: {}
+[0.402372] (-) TimerEvent: {}
+[0.503557] (-) TimerEvent: {}
+[0.604693] (-) TimerEvent: {}
+[0.705828] (-) TimerEvent: {}
+[0.806935] (-) TimerEvent: {}
+[0.908110] (-) TimerEvent: {}
+[1.009225] (-) TimerEvent: {}
+[1.110344] (-) TimerEvent: {}
+[1.211567] (-) TimerEvent: {}
+[1.312857] (-) TimerEvent: {}
+[1.414075] (-) TimerEvent: {}
+[1.515161] (-) TimerEvent: {}
+[1.616298] (-) TimerEvent: {}
+[1.717363] (-) TimerEvent: {}
+[1.818434] (-) TimerEvent: {}
+[1.919551] (-) TimerEvent: {}
+[2.020684] (-) TimerEvent: {}
+[2.121932] (-) TimerEvent: {}
+[2.223138] (-) TimerEvent: {}
+[2.324402] (-) TimerEvent: {}
+[2.427755] (-) TimerEvent: {}
+[2.528944] (-) TimerEvent: {}
+[2.630089] (-) TimerEvent: {}
+[2.731221] (-) TimerEvent: {}
+[2.832354] (-) TimerEvent: {}
+[2.933510] (-) TimerEvent: {}
+[3.034681] (-) TimerEvent: {}
+[3.135878] (-) TimerEvent: {}
+[3.237039] (-) TimerEvent: {}
+[3.338101] (-) TimerEvent: {}
+[3.439179] (-) TimerEvent: {}
+[3.540391] (-) TimerEvent: {}
+[3.641676] (-) TimerEvent: {}
+[3.742946] (-) TimerEvent: {}
+[3.844194] (-) TimerEvent: {}
+[3.945295] (-) TimerEvent: {}
+[4.046415] (-) TimerEvent: {}
+[4.147591] (-) TimerEvent: {}
+[4.248680] (-) TimerEvent: {}
+[4.349751] (-) TimerEvent: {}
+[4.450841] (-) TimerEvent: {}
+[4.551998] (-) TimerEvent: {}
+[4.653136] (-) TimerEvent: {}
+[4.754440] (-) TimerEvent: {}
+[4.855804] (-) TimerEvent: {}
+[4.956923] (-) TimerEvent: {}
+[5.057985] (-) TimerEvent: {}
+[5.159071] (-) TimerEvent: {}
+[5.260229] (-) TimerEvent: {}
+[5.361341] (-) TimerEvent: {}
+[5.462410] (-) TimerEvent: {}
+[5.563525] (-) TimerEvent: {}
+[5.664624] (-) TimerEvent: {}
+[5.765681] (-) TimerEvent: {}
+[5.866879] (-) TimerEvent: {}
+[5.969035] (-) TimerEvent: {}
+[6.070642] (-) TimerEvent: {}
+[6.172290] (-) TimerEvent: {}
+[6.273370] (-) TimerEvent: {}
+[6.374472] (-) TimerEvent: {}
+[6.475623] (-) TimerEvent: {}
+[6.576707] (-) TimerEvent: {}
+[6.677842] (-) TimerEvent: {}
+[6.778982] (-) TimerEvent: {}
+[6.880716] (-) TimerEvent: {}
+[6.982424] (-) TimerEvent: {}
+[7.084716] (-) TimerEvent: {}
+[7.186515] (-) TimerEvent: {}
+[7.288293] (-) TimerEvent: {}
+[7.390833] (-) TimerEvent: {}
+[7.492734] (-) TimerEvent: {}
+[7.593975] (-) TimerEvent: {}
+[7.628655] (my_pkg) Command: {'cmd': ['/usr/bin/python3', '-W', 'ignore:setup.py install is deprecated', 'setup.py', 'egg_info', '--egg-base', '../../build/my_pkg', 'build', '--build-base', '/home/hyt/ros_car/build/my_pkg/build', 'install', '--record', '/home/hyt/ros_car/build/my_pkg/install.log', '--single-version-externally-managed', 'install_data'], 'cwd': '/home/hyt/ros_car/src/my_pkg', 'env': {'LESSOPEN': '| /usr/bin/lesspipe %s', 'LANGUAGE': '', 'USER': 'hyt', 'LC_TIME': 'zh_CN.UTF-8', 'MESA_LOADER_DRIVER_OVERRIDE': 'pvr', 'XDG_SEAT': 'seat0', 'XDG_SESSION_TYPE': 'wayland', 'XDG_CACHE_HOME': '/home/hyt/.cache', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/riscv64-linux-gnu:/opt/ros/humble/lib', 'BROWSER': 'chromium-browser-stable', 'HOME': '/home/hyt', 'MOZ_ENABLE_WAYLAND': '1', 'OLDPWD': '/home/hyt', 'DESKTOP_SESSION': 'bianbu-lite', 'ROS_PYTHON_VERSION': '3', 'COGL_DRIVER': 'gles2', 'XDG_SEAT_PATH': '/org/freedesktop/DisplayManager/Seat0', 'SDL_IM_MODULE': 'fcitx', 'LC_MONETARY': 'zh_CN.UTF-8', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus', 'COLORTERM': 'truecolor', 'QT_EXCLUDE_GENERIC_BEARER': '1', 'XWAYLAND_NO_GLAMOR': '1', 'WLR_WL_DRM_DEVICE': '/dev/dri/card1', 'QT_QPA_PLATFORMTHEME': 'lxqt', 'IM_CONFIG_PHASE': '1', 'WAYLAND_DISPLAY': 'wayland-0', 'ROS_DISTRO': 'humble', 'GTK_IM_MODULE': 'fcitx', 'LOGNAME': 'hyt', 'WINDOWID': '0', 'QT_AUTO_SCREEN_SCALE_FACTOR': '0', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'XDG_SESSION_CLASS': 'user', 'COLORFGBG': '15;0', 'TERM': 'xterm-256color', 'GST_GL_API': 'gles2', 'XDG_SESSION_ID': '3', 'ROS_LOCALHOST_ONLY': '0', 'SAL_USE_VCLPLUGIN': 'qt6', 'PATH': '/opt/ros/humble/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin', 'LABWC_PID': '1205', 'XDG_SESSION_PATH': '/org/freedesktop/DisplayManager/Session1', 'XDG_MENU_PREFIX': 'lxqt-', 'LC_ADDRESS': 'zh_CN.UTF-8', 'XDG_RUNTIME_DIR': '/run/user/1000', 'GST_GL_PLATFORM': 'egl', 'DISPLAY': ':0', 'LANG': 'zh_CN.UTF-8', 'XDG_CURRENT_DESKTOP': 'LXQt:wlroots', 'LC_TELEPHONE': 'zh_CN.UTF-8', 'XDG_DATA_HOME': '/home/hyt/.local/share', 'XDG_CONFIG_HOME': '/home/hyt/.config', 'XMODIFIERS': '@im=fcitx', 'XDG_SESSION_DESKTOP': 'LXQt', 'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:', 'AMENT_PREFIX_PATH': '/opt/ros/humble', 'SAL_ENABLESKIA': '1', 'SHELL': '/bin/bash', 'LC_NAME': 'zh_CN.UTF-8', 'QT_ACCESSIBILITY': '1', 'SDL_VIDEODRIVER': 'wayland', '_JAVA_AWT_WM_NONREPARENTING': '1', 'LESSCLOSE': '/usr/bin/lesspipe %s %s', 'LXQT_SESSION_CONFIG': 'session', 'LC_MEASUREMENT': 'zh_CN.UTF-8', 'LC_IDENTIFICATION': 'zh_CN.UTF-8', 'GDK_GL': 'gles', 'SAL_DISABLEGL': '1', 'QT_IM_MODULE': 'wayland', 'XDG_VTNR': '2', 'PWD': '/home/hyt/ros_car/build/my_pkg', 'XDG_CONFIG_DIRS': '/etc/xdg/xdg-bianbu-lite:/etc/xdg', 'WLR_DRM_DEVICES': '/dev/dri/card2:/dev/dri/card1', 'CLUTTER_IM_MODULE': 'xim', 'XDG_DATA_DIRS': '/usr/share/bianbu-lite:/usr/local/share/:/usr/share/:/usr/share', 'PYTHONPATH': '/home/hyt/ros_car/build/my_pkg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages:/opt/ros/humble/lib/python3.12/site-packages:/opt/ros/humble/lib/python3/dist-packages', 'LC_NUMERIC': 'zh_CN.UTF-8', 'LC_PAPER': 'zh_CN.UTF-8', 'QT_PLATFORM_PLUGIN': 'lxqt', 'COLCON': '1', 'LABWC_VER': 'bianbu-24.04/0.8.3-1bb103_bpo2+2'}, 'shell': False}
+[7.694225] (-) TimerEvent: {}
+[7.795435] (-) TimerEvent: {}
+[7.896744] (-) TimerEvent: {}
+[7.997851] (-) TimerEvent: {}
+[8.099010] (-) TimerEvent: {}
+[8.200273] (-) TimerEvent: {}
+[8.301625] (-) TimerEvent: {}
+[8.402822] (-) TimerEvent: {}
+[8.504037] (-) TimerEvent: {}
+[8.605149] (-) TimerEvent: {}
+[8.706245] (-) TimerEvent: {}
+[8.807990] (-) TimerEvent: {}
+[8.909122] (-) TimerEvent: {}
+[9.010673] (-) TimerEvent: {}
+[9.068342] (my_pkg) StderrLine: {'line': b"/usr/lib/python3/dist-packages/setuptools/_distutils/dist.py:270: UserWarning: Unknown distribution option: 'tests_require'\n"}
+[9.070083] (my_pkg) StderrLine: {'line': b'  warnings.warn(msg)\n'}
+[9.113539] (-) TimerEvent: {}
+[9.215305] (-) TimerEvent: {}
+[9.317218] (-) TimerEvent: {}
+[9.418549] (-) TimerEvent: {}
+[9.519694] (-) TimerEvent: {}
+[9.620776] (-) TimerEvent: {}
+[9.721872] (-) TimerEvent: {}
+[9.822974] (-) TimerEvent: {}
+[9.924214] (-) TimerEvent: {}
+[10.025408] (-) TimerEvent: {}
+[10.126497] (-) TimerEvent: {}
+[10.227653] (-) TimerEvent: {}
+[10.328773] (-) TimerEvent: {}
+[10.429893] (-) TimerEvent: {}
+[10.531105] (-) TimerEvent: {}
+[10.550496] (my_pkg) StdoutLine: {'line': b'running egg_info\n'}
+[10.631373] (-) TimerEvent: {}
+[10.733198] (-) TimerEvent: {}
+[10.781491] (my_pkg) StdoutLine: {'line': b'writing ../../build/my_pkg/my_pkg.egg-info/PKG-INFO\n'}
+[10.785850] (my_pkg) StdoutLine: {'line': b'writing dependency_links to ../../build/my_pkg/my_pkg.egg-info/dependency_links.txt\n'}
+[10.789412] (my_pkg) StdoutLine: {'line': b'writing entry points to ../../build/my_pkg/my_pkg.egg-info/entry_points.txt\n'}
+[10.791593] (my_pkg) StdoutLine: {'line': b'writing requirements to ../../build/my_pkg/my_pkg.egg-info/requires.txt\n'}
+[10.792918] (my_pkg) StdoutLine: {'line': b'writing top-level names to ../../build/my_pkg/my_pkg.egg-info/top_level.txt\n'}
+[10.833436] (-) TimerEvent: {}
+[10.934570] (-) TimerEvent: {}
+[11.035737] (-) TimerEvent: {}
+[11.136890] (-) TimerEvent: {}
+[11.238038] (-) TimerEvent: {}
+[11.266715] (my_pkg) StdoutLine: {'line': b"reading manifest file '../../build/my_pkg/my_pkg.egg-info/SOURCES.txt'\n"}
+[11.277293] (my_pkg) StdoutLine: {'line': b"writing manifest file '../../build/my_pkg/my_pkg.egg-info/SOURCES.txt'\n"}
+[11.279274] (my_pkg) StdoutLine: {'line': b'running build\n'}
+[11.280400] (my_pkg) StdoutLine: {'line': b'running build_py\n'}
+[11.281548] (my_pkg) StdoutLine: {'line': b'copying my_pkg/hello_node.py -> /home/hyt/ros_car/build/my_pkg/build/lib/my_pkg\n'}
+[11.282984] (my_pkg) StdoutLine: {'line': b'copying my_pkg/__init__.py -> /home/hyt/ros_car/build/my_pkg/build/lib/my_pkg\n'}
+[11.284719] (my_pkg) StdoutLine: {'line': b'copying my_pkg/gui_node.py -> /home/hyt/ros_car/build/my_pkg/build/lib/my_pkg\n'}
+[11.286649] (my_pkg) StdoutLine: {'line': b'copying my_pkg/camera_node.py -> /home/hyt/ros_car/build/my_pkg/build/lib/my_pkg\n'}
+[11.289582] (my_pkg) StdoutLine: {'line': b'running install\n'}
+[11.338279] (-) TimerEvent: {}
+[11.344047] (my_pkg) StdoutLine: {'line': b'running install_lib\n'}
+[11.438542] (-) TimerEvent: {}
+[11.539723] (-) TimerEvent: {}
+[11.575181] (my_pkg) StdoutLine: {'line': b'running install_data\n'}
+[11.577966] (my_pkg) StdoutLine: {'line': b'copying resource/my_pkg -> /home/hyt/ros_car/install/my_pkg/share/ament_index/resource_index/packages\n'}
+[11.580763] (my_pkg) StdoutLine: {'line': b'copying package.xml -> /home/hyt/ros_car/install/my_pkg/share/my_pkg\n'}
+[11.583252] (my_pkg) StdoutLine: {'line': b'running install_egg_info\n'}
+[11.640047] (-) TimerEvent: {}
+[11.741365] (-) TimerEvent: {}
+[11.842500] (-) TimerEvent: {}
+[11.851794] (my_pkg) StdoutLine: {'line': b"removing '/home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg-0.0.0-py3.12.egg-info' (and everything under it)\n"}
+[11.856441] (my_pkg) StdoutLine: {'line': b'Copying ../../build/my_pkg/my_pkg.egg-info to /home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg-0.0.0-py3.12.egg-info\n'}
+[11.863940] (my_pkg) StdoutLine: {'line': b'running install_scripts\n'}
+[11.942764] (-) TimerEvent: {}
+[12.043923] (-) TimerEvent: {}
+[12.145107] (-) TimerEvent: {}
+[12.246292] (-) TimerEvent: {}
+[12.347449] (-) TimerEvent: {}
+[12.448657] (-) TimerEvent: {}
+[12.549817] (-) TimerEvent: {}
+[12.650953] (-) TimerEvent: {}
+[12.752186] (-) TimerEvent: {}
+[12.853572] (-) TimerEvent: {}
+[12.954794] (-) TimerEvent: {}
+[13.056033] (-) TimerEvent: {}
+[13.157178] (-) TimerEvent: {}
+[13.258337] (-) TimerEvent: {}
+[13.259916] (my_pkg) StdoutLine: {'line': b'Installing gui_node script to /home/hyt/ros_car/install/my_pkg/lib/my_pkg\n'}
+[13.261465] (my_pkg) StdoutLine: {'line': b'Installing hello_node script to /home/hyt/ros_car/install/my_pkg/lib/my_pkg\n'}
+[13.266456] (my_pkg) StdoutLine: {'line': b"writing list of installed files to '/home/hyt/ros_car/build/my_pkg/install.log'\n"}
+[13.358689] (-) TimerEvent: {}
+[13.460083] (-) TimerEvent: {}
+[13.561424] (-) TimerEvent: {}
+[13.596404] (my_pkg) CommandEnded: {'returncode': 0}
+[13.664318] (-) TimerEvent: {}
+[13.683189] (my_pkg) JobEnded: {'identifier': 'my_pkg', 'rc': 0}
+[13.689750] (-) EventReactorShutdown: {}
