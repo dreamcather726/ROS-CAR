@@ -36,3 +36,38 @@ void mpu6050_read(float *ax, float *ay, float *az, float *gx, float *gy, float *
   *gy = gy_raw / 16.4f;
   *gz = gz_raw / 16.4f;
 }
+
+static inline void write_i16_le(uint8_t *out, int16_t v)
+{
+  out[0] = static_cast<uint8_t>(v & 0xFF);
+  out[1] = static_cast<uint8_t>((v >> 8) & 0xFF);
+}
+
+static inline int16_t clamp_i16(int32_t v)
+{
+  if (v > 32767) return 32767;
+  if (v < -32768) return -32768;
+  return static_cast<int16_t>(v);
+}
+
+bool mpu6050_pack_accel_g_x1000(float accel_x, float accel_y, float accel_z, uint8_t out6[6])
+{
+  const int16_t ax = clamp_i16(static_cast<int32_t>(accel_x * 1000.0f));
+  const int16_t ay = clamp_i16(static_cast<int32_t>(accel_y * 1000.0f));
+  const int16_t az = clamp_i16(static_cast<int32_t>(accel_z * 1000.0f));
+  write_i16_le(&out6[0], ax);
+  write_i16_le(&out6[2], ay);
+  write_i16_le(&out6[4], az);
+  return true;
+}
+
+bool mpu6050_pack_gyro_dps_x10(float gyro_x, float gyro_y, float gyro_z, uint8_t out6[6])
+{
+  const int16_t gx = clamp_i16(static_cast<int32_t>(gyro_x * 10.0f));
+  const int16_t gy = clamp_i16(static_cast<int32_t>(gyro_y * 10.0f));
+  const int16_t gz = clamp_i16(static_cast<int32_t>(gyro_z * 10.0f));
+  write_i16_le(&out6[0], gx);
+  write_i16_le(&out6[2], gy);
+  write_i16_le(&out6[4], gz);
+  return true;
+}

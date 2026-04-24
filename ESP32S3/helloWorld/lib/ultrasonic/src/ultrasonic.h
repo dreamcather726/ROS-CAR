@@ -11,3 +11,5 @@ void ultrasonic_init();
 // 获取距离，单位：厘米 cm
 // 超时返回 -1
 float ultrasonic_get_distance();
+
+bool ultrasonic_pack_distance_cm_x10(float distance_cm, uint8_t out6[6]);

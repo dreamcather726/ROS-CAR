@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include <Arduino.h>
 
 // 初始化MPU6050
@@ -14,3 +16,6 @@ void mpu6050_read(
   float *gyro_y,
   float *gyro_z
 );
+
+bool mpu6050_pack_accel_g_x1000(float accel_x, float accel_y, float accel_z, uint8_t out6[6]);
+bool mpu6050_pack_gyro_dps_x10(float gyro_x, float gyro_y, float gyro_z, uint8_t out6[6]);
