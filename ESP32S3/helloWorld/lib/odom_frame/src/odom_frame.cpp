@@ -1,12 +1,11 @@
 #include "odom_frame.h"
-// 写入16位有符号整数（小端）
+
 static inline void write_i16_le(uint8_t *out, int16_t v)
 {
   out[0] = static_cast<uint8_t>(v & 0xFF);
   out[1] = static_cast<uint8_t>((v >> 8) & 0xFF);
 }
 
-// 写入24位有符号整数（小端）
 static inline void write_i24_le(uint8_t *out, int32_t v)
 {
   out[0] = static_cast<uint8_t>(v & 0xFF);
@@ -14,19 +13,13 @@ static inline void write_i24_le(uint8_t *out, int32_t v)
   out[2] = static_cast<uint8_t>((v >> 16) & 0xFF);
 }
 
-// 写入24位有符号整数（小端） 
-// 修改odom_frame_build_counts_i24_le函数返回类型为bool
-bool odom_frame_build_counts_i24_le(int32_t left_count, int32_t right_count, uint8_t out6[6])
+void odom_frame_build_counts_i24_le(int32_t left_count, int32_t right_count, uint8_t out6[6])
 {
   write_i24_le(&out6[0], left_count);
   write_i24_le(&out6[3], right_count);
-  return true;  
 }
 
-// 写入16位有符号整数（小端） 
-// 单位：厘米/秒 * 100
-// 单位：厘米/秒 * 100
-bool odom_frame_build_speed_i16_le_x100(float left_cm_s, float right_cm_s, uint8_t out6[6])
+void odom_frame_build_speed_i16_le_x100(float left_cm_s, float right_cm_s, uint8_t out6[6])
 {
   const float scale = 100.0f;
   int32_t ls = static_cast<int32_t>(left_cm_s * scale);
@@ -40,6 +33,4 @@ bool odom_frame_build_speed_i16_le_x100(float left_cm_s, float right_cm_s, uint8
   out6[5] = 0;
   write_i16_le(&out6[0], static_cast<int16_t>(ls));
   write_i16_le(&out6[2], static_cast<int16_t>(rs));
-  return true;
 }
-  

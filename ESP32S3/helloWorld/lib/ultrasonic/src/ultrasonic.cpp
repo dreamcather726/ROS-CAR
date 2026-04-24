@@ -27,14 +27,14 @@ float ultrasonic_get_distance() {
 
     return distance;
 }
-
+    
 static inline void write_i16_le(uint8_t *out, int16_t v)
 {
     out[0] = static_cast<uint8_t>(v & 0xFF);
     out[1] = static_cast<uint8_t>((v >> 8) & 0xFF);
 }
 
-bool ultrasonic_pack_distance_cm_x10(float distance_cm, uint8_t out6[6])
+void ultrasonic_pack_distance_cm_x10(float distance_cm, uint8_t out6[6])
 {
     int32_t dv = -1;
     if (distance_cm >= 0.0f) {
@@ -48,5 +48,4 @@ bool ultrasonic_pack_distance_cm_x10(float distance_cm, uint8_t out6[6])
     out6[4] = 0;
     out6[5] = 0;
     write_i16_le(&out6[0], static_cast<int16_t>(dv));
-    return true;
 }

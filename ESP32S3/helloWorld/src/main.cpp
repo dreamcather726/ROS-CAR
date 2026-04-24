@@ -9,11 +9,11 @@
 
 #define SERIAL_BAUD 115200
 
-static constexpr uint8_t FUNC_ODOM_COUNTS = 0x10;// 里程计计数
-static constexpr uint8_t FUNC_ODOM_SPEED = 0x11;// 里程计速度
-static constexpr uint8_t FUNC_ODOM_DISTANCE = 0x12;// 里程计距离
-static constexpr uint8_t FUNC_IMU_ACCEL = 0x20;// IMU加速度
-static constexpr uint8_t FUNC_IMU_GYRO = 0x21;// IMU陀螺仪
+static constexpr uint8_t FUNC_ODOM_COUNTS = 0x01;// 里程计计数
+static constexpr uint8_t FUNC_ODOM_SPEED = 0x02;// 里程计速度
+static constexpr uint8_t FUNC_ODOM_DISTANCE = 0x03;// 里程计距离
+static constexpr uint8_t FUNC_IMU_ACCEL = 0x04;// IMU加速度
+static constexpr uint8_t FUNC_IMU_GYRO = 0x05;// IMU陀螺仪
 
 static constexpr uint32_t ODOM_PERIOD_US = 100000U;// 100ms
 
@@ -45,17 +45,17 @@ void loop() {
 
   if (Serial.availableForWrite() < static_cast<int>(SERIAL_SENDER_FRAME_SIZE * 5)) return;
 
-  uint8_t data_counts[SERIAL_SENDER_DATA_SIZE];
-  uint8_t data_speed[SERIAL_SENDER_DATA_SIZE];
-  uint8_t data_distance[SERIAL_SENDER_DATA_SIZE];
-  uint8_t data_accel[SERIAL_SENDER_DATA_SIZE];
-  uint8_t data_gyro[SERIAL_SENDER_DATA_SIZE];
+  uint8_t data_counts[SERIAL_SENDER_DATA_SIZE];// 里程计计数
+  uint8_t data_speed[SERIAL_SENDER_DATA_SIZE];// 里程计速度
+  uint8_t data_distance[SERIAL_SENDER_DATA_SIZE];// 里程计距离
+  uint8_t data_accel[SERIAL_SENDER_DATA_SIZE];// IMU加速度
+  uint8_t data_gyro[SERIAL_SENDER_DATA_SIZE];// IMU陀螺仪
 
-  if (!odom_frame_build_counts_i24_le(left_count, right_count, data_counts)) return;
-  if (!odom_frame_build_speed_i16_le_x100(left_cm_s, right_cm_s, data_speed)) return;
-  if (!ultrasonic_pack_distance_cm_x10(distance, data_distance)) return;
-  if (!mpu6050_pack_accel_g_x1000(accel_x, accel_y, accel_z, data_accel)) return;
-  if (!mpu6050_pack_gyro_dps_x10(gyro_x, gyro_y, gyro_z, data_gyro)) return;
+  odom_frame_build_counts_i24_le(left_count, right_count, data_counts);// 里程计计数
+  odom_frame_build_speed_i16_le_x100(left_cm_s, right_cm_s, data_speed);// 里程计速度
+  ultrasonic_pack_distance_cm_x10(distance, data_distance);// 里程计距离
+  mpu6050_pack_accel_g_x1000(accel_x, accel_y, accel_z, data_accel);// IMU加速度
+  mpu6050_pack_gyro_dps_x10(gyro_x, gyro_y, gyro_z, data_gyro);// IMU陀螺仪
 
   ss_send(Serial, FUNC_ODOM_COUNTS, data_counts, false);// 里程计计数
   ss_send(Serial, FUNC_ODOM_SPEED, data_speed, false);// 里程计速度
