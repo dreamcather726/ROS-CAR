@@ -5,6 +5,7 @@
 #include <odom_timer.h>
 #include <ultrasonic.h>
 #include <odom_frame.h>
+#include <mpu6050.h>
 
 #define SERIAL_BAUD 115200
 
@@ -19,6 +20,7 @@ void setup() {
   Serial.begin(SERIAL_BAUD);
   ultrasonic_init();
   wheel_encoder_init();
+  mpu6050_init(); // 初始化MPU6050
   wheel_encoder_speed_init();
   motor_init();
   odom_timer_init(ODOM_PERIOD_US);
@@ -34,7 +36,10 @@ void loop() {
   int32_t right_count = 0;
   // 获取超声波距离
   float distance = ultrasonic_get_distance();
-
+  // 读取MPU6050数据
+  float accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z;
+  mpu6050_read(&accel_x, &accel_y, &accel_z, &gyro_x, &gyro_y, &gyro_z);
+  
   float left_cm_s = 0.0f;// 速度单位：cm/s * 1000
   float right_cm_s = 0.0f;// 速度单位：cm/s * 1000
   if (!wheel_encoder_get_odom(&left_count, &right_count, &left_cm_s, &right_cm_s, ODOM_PERIOD_US)) return;// 获取里程计数据
@@ -48,7 +53,9 @@ void loop() {
   ss_send(Serial, FUNC_ODOM_COUNTS, data_counts, false);// 发送里程计数据
   ss_send(Serial, FUNC_ODOM_SPEED, data_speed, false);// 发送速度数据
   ss_send(Serial, FUNC_ODOM_DISTANCE, &distance, sizeof(distance));// 发送超声波距离数据
-  
+  ss_send(Serial, FUNC_ODOM_ACCEL, (uint8_t *)&accel_x, sizeof(accel_x));// 发送加速度数据
+  ss_send(Serial, FUNC_ODOM_GYRO, (uint8_t *)&gyro_x, sizeof(gyro_x));// 发送陀螺仪数据
+
   //打印原始数据
   // Serial.println(distance);// 打印距离
   // Serial.println("ODOM:");
