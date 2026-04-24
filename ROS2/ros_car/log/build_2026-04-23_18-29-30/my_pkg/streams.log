@@ -1,0 +1,30 @@
+[7.785s] Invoking command in '/home/hyt/ros_car/src/my_pkg': PYTHONPATH=/home/hyt/ros_car/build/my_pkg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages:${PYTHONPATH} VIRTUAL_ENV_PROMPT=(ros_venv) /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../../build/my_pkg build --build-base /home/hyt/ros_car/build/my_pkg/build install --record /home/hyt/ros_car/build/my_pkg/install.log --single-version-externally-managed install_data
+[9.250s] /usr/lib/python3/dist-packages/setuptools/_distutils/dist.py:270: UserWarning: Unknown distribution option: 'tests_require'
+[9.252s]   warnings.warn(msg)
+[10.644s] running egg_info
+[10.871s] writing ../../build/my_pkg/my_pkg.egg-info/PKG-INFO
+[10.874s] writing dependency_links to ../../build/my_pkg/my_pkg.egg-info/dependency_links.txt
+[10.879s] writing entry points to ../../build/my_pkg/my_pkg.egg-info/entry_points.txt
+[10.881s] writing requirements to ../../build/my_pkg/my_pkg.egg-info/requires.txt
+[10.882s] writing top-level names to ../../build/my_pkg/my_pkg.egg-info/top_level.txt
+[11.350s] reading manifest file '../../build/my_pkg/my_pkg.egg-info/SOURCES.txt'
+[11.361s] writing manifest file '../../build/my_pkg/my_pkg.egg-info/SOURCES.txt'
+[11.363s] running build
+[11.365s] running build_py
+[11.366s] copying my_pkg/hello_node.py -> /home/hyt/ros_car/build/my_pkg/build/lib/my_pkg
+[11.368s] copying my_pkg/__init__.py -> /home/hyt/ros_car/build/my_pkg/build/lib/my_pkg
+[11.370s] copying my_pkg/serial_node.py -> /home/hyt/ros_car/build/my_pkg/build/lib/my_pkg
+[11.373s] running install
+[11.426s] running install_lib
+[11.659s] running install_data
+[11.661s] copying resource/my_pkg -> /home/hyt/ros_car/install/my_pkg/share/ament_index/resource_index/packages
+[11.664s] copying package.xml -> /home/hyt/ros_car/install/my_pkg/share/my_pkg
+[11.665s] running install_egg_info
+[11.906s] removing '/home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg-0.0.0-py3.12.egg-info' (and everything under it)
+[11.912s] Copying ../../build/my_pkg/my_pkg.egg-info to /home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg-0.0.0-py3.12.egg-info
+[11.921s] running install_scripts
+[13.337s] Installing gui_node script to /home/hyt/ros_car/install/my_pkg/lib/my_pkg
+[13.339s] Installing hello_node script to /home/hyt/ros_car/install/my_pkg/lib/my_pkg
+[13.343s] Installing serial_node script to /home/hyt/ros_car/install/my_pkg/lib/my_pkg
+[13.347s] writing list of installed files to '/home/hyt/ros_car/build/my_pkg/install.log'
+[13.680s] Invoked command in '/home/hyt/ros_car/src/my_pkg' returned '0': PYTHONPATH=/home/hyt/ros_car/build/my_pkg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages:${PYTHONPATH} VIRTUAL_ENV_PROMPT=(ros_venv) /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../../build/my_pkg build --build-base /home/hyt/ros_car/build/my_pkg/build install --record /home/hyt/ros_car/build/my_pkg/install.log --single-version-externally-managed install_data

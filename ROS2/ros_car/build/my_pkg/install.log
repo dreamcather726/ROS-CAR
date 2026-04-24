@@ -1,11 +1,9 @@
-/home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg/hello_node.py
 /home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg/__init__.py
-/home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg/gui_node.py
-/home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg/camera_node.py
-/home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg/__pycache__/hello_node.cpython-312.pyc
+/home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg/serial_node.py
+/home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg/serial_sub_demo.py
 /home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg/__pycache__/__init__.cpython-312.pyc
-/home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg/__pycache__/gui_node.cpython-312.pyc
-/home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg/__pycache__/camera_node.cpython-312.pyc
+/home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg/__pycache__/serial_node.cpython-312.pyc
+/home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg/__pycache__/serial_sub_demo.cpython-312.pyc
 /home/hyt/ros_car/install/my_pkg/share/ament_index/resource_index/packages/my_pkg
 /home/hyt/ros_car/install/my_pkg/share/my_pkg/package.xml
 /home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg-0.0.0-py3.12.egg-info/requires.txt
@@ -16,4 +14,5 @@
 /home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg-0.0.0-py3.12.egg-info/top_level.txt
 /home/hyt/ros_car/install/my_pkg/lib/python3.12/site-packages/my_pkg-0.0.0-py3.12.egg-info/entry_points.txt
 /home/hyt/ros_car/install/my_pkg/lib/my_pkg/gui_node
-/home/hyt/ros_car/install/my_pkg/lib/my_pkg/hello_node
+/home/hyt/ros_car/install/my_pkg/lib/my_pkg/serial_node
+/home/hyt/ros_car/install/my_pkg/lib/my_pkg/serial_sub_demo

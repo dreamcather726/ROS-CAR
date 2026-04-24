@@ -9,9 +9,8 @@ setup.py
 ../../build/my_pkg/my_pkg.egg-info/top_level.txt
 ../../build/my_pkg/my_pkg.egg-info/zip-safe
 my_pkg/__init__.py
-my_pkg/camera_node.py
-my_pkg/gui_node.py
-my_pkg/hello_node.py
+my_pkg/serial_node.py
+my_pkg/serial_sub_demo.py
 resource/my_pkg
 test/test_copyright.py
 test/test_flake8.py
