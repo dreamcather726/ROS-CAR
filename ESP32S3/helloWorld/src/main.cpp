@@ -9,11 +9,11 @@
 
 #define SERIAL_BAUD 115200
 
-static constexpr uint8_t FUNC_ODOM_COUNTS = 0x10;
-static constexpr uint8_t FUNC_ODOM_SPEED = 0x11;
-static constexpr uint8_t FUNC_ODOM_DISTANCE = 0x12;
-static constexpr uint8_t FUNC_IMU_ACCEL = 0x20;
-static constexpr uint8_t FUNC_IMU_GYRO = 0x21;
+static constexpr uint8_t FUNC_ODOM_COUNTS = 0x10;// 里程计计数
+static constexpr uint8_t FUNC_ODOM_SPEED = 0x11;// 里程计速度
+static constexpr uint8_t FUNC_ODOM_DISTANCE = 0x12;// 里程计距离
+static constexpr uint8_t FUNC_IMU_ACCEL = 0x20;// IMU加速度
+static constexpr uint8_t FUNC_IMU_GYRO = 0x21;// IMU陀螺仪
 
 static constexpr uint32_t ODOM_PERIOD_US = 100000U;// 100ms
 
@@ -57,9 +57,9 @@ void loop() {
   if (!mpu6050_pack_accel_g_x1000(accel_x, accel_y, accel_z, data_accel)) return;
   if (!mpu6050_pack_gyro_dps_x10(gyro_x, gyro_y, gyro_z, data_gyro)) return;
 
-  ss_send(Serial, FUNC_ODOM_COUNTS, data_counts, false);
-  ss_send(Serial, FUNC_ODOM_SPEED, data_speed, false);
-  ss_send(Serial, FUNC_ODOM_DISTANCE, data_distance, false);
-  ss_send(Serial, FUNC_IMU_ACCEL, data_accel, false);
-  ss_send(Serial, FUNC_IMU_GYRO, data_gyro, false);
+  ss_send(Serial, FUNC_ODOM_COUNTS, data_counts, false);// 里程计计数
+  ss_send(Serial, FUNC_ODOM_SPEED, data_speed, false);// 里程计速度
+  ss_send(Serial, FUNC_ODOM_DISTANCE, data_distance, false);// 里程计距离
+  ss_send(Serial, FUNC_IMU_ACCEL, data_accel, false);// IMU加速度
+  ss_send(Serial, FUNC_IMU_GYRO, data_gyro, false);// IMU陀螺仪
 }
