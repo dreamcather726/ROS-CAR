@@ -62,4 +62,18 @@ void loop() {
   ss_send(Serial, FUNC_ODOM_DISTANCE, data_distance, false);// 里程计距离
   ss_send(Serial, FUNC_IMU_ACCEL, data_accel, false);// IMU加速度
   ss_send(Serial, FUNC_IMU_GYRO, data_gyro, false);// IMU陀螺仪
+  //原始数据
+  // Serial.println("原始数据：");
+  
+  // Serial.println(left_count);
+
+  // Serial.println(right_count);
+  // Serial.println(distance);
+  // Serial.println(accel_x);
+  // Serial.println(accel_y);
+  // Serial.println(accel_z);
+  // Serial.println(gyro_x);
+  // Serial.println(gyro_y);
+  // Serial.println(gyro_z);
+  // delay(1000);
 }
