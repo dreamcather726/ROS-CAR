@@ -20,8 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-                'hello_node = my_pkg.hello_node:main',
-                'gui_node   = my_pkg.gui_node:main',
+                
+               
                 'serial_node = my_pkg.serial_node:main',
                 'serial_sub_demo = my_pkg.serial_sub_demo:main',
         ],
