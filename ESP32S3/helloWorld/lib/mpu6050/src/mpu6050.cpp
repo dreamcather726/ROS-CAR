@@ -201,3 +201,12 @@ void mpu6050_pack_gyro_dps_x10(float gyro_x_dps, float gyro_y_dps, float gyro_z_
     write_i16_le(&out6[2], gy_out);
     write_i16_le(&out6[4], gz_out);
 }
+void mpu6050_pack_roll_pitch_yaw_degrees(float roll_deg, float pitch_deg, float yaw_deg, uint8_t out6[6])
+{
+    const int16_t rx_out = clamp_i16(static_cast<int32_t>(roll_deg * 100.0f));
+    const int16_t ry_out = clamp_i16(static_cast<int32_t>(pitch_deg * 100.0f));
+    const int16_t rz_out = clamp_i16(static_cast<int32_t>(yaw_deg * 100.0f));
+    write_i16_le(&out6[0], rx_out);
+    write_i16_le(&out6[2], ry_out);
+    write_i16_le(&out6[4], rz_out);
+}

@@ -1,4 +1,3 @@
-import math
 import threading
 import time
 from typing import Optional
@@ -7,7 +6,7 @@ import rclpy
 from rclpy.node import Node
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from geometry_msgs.msg import TwistStamped, Vector3Stamped
-from sensor_msgs.msg import Imu, Range
+from sensor_msgs.msg import Range
 
 import serial
 import serial.tools.list_ports
@@ -16,14 +15,14 @@ class SerialSensorNode(Node):
     def __init__(self, *, start_serial: Optional[bool] = None):
         super().__init__('serial_node')
 
-        self.declare_parameter('port', '/dev/ttyUSB0')
-        self.declare_parameter('baudrate', 115200)
-        self.declare_parameter('topic_ns', '/car')
-        self.declare_parameter('wheel_base_m', 0.0)
-        self.declare_parameter('rx_timeout_s', 2.0)
-        self.declare_parameter('reconnect_interval_s', 1.0)
-        self.declare_parameter('warn_interval_s', 2.0)
-        self.declare_parameter('enable_serial', True)
+        self.declare_parameter('port', '/dev/ttyUSB0')# 串口端口
+        self.declare_parameter('baudrate', 115200)# 串口波特率
+        self.declare_parameter('topic_ns', '/car')# 主题命名空间
+        self.declare_parameter('wheel_base_m', 0.0)# 轮距
+        self.declare_parameter('rx_timeout_s', 2.0)# 接收超时时间
+        self.declare_parameter('reconnect_interval_s', 1.0)# 重新连接间隔
+        self.declare_parameter('warn_interval_s', 2.0)# 警告间隔
+        self.declare_parameter('enable_serial', True)   # 是否启用串口通信
 
         self.port = str(self.get_parameter('port').value)
         self.baudrate = int(self.get_parameter('baudrate').value)
@@ -39,12 +38,11 @@ class SerialSensorNode(Node):
         self._frame_len = 10
         self._start_byte = 0xAA
         self._end_byte = 0xBB
-
+        
         self._FUNC_ODOM_COUNTS = 0x01
         self._FUNC_ODOM_SPEED = 0x02
         self._FUNC_ODOM_DISTANCE = 0x03
-        self._FUNC_IMU_ACCEL = 0x04
-        self._FUNC_IMU_GYRO = 0x05
+        self._FUNC_IMU_RPY = 0x04
 
         self._frame_id_base = 'base_link'
         self._frame_id_imu = 'imu_link'
@@ -54,7 +52,7 @@ class SerialSensorNode(Node):
         self.pub_wheel_speed = self.create_publisher(Vector3Stamped, f'{self.topic_ns}/odom/wheel_speed_mps', 10)
         self.pub_twist = self.create_publisher(TwistStamped, f'{self.topic_ns}/twist', 10)
         self.pub_range = self.create_publisher(Range, f'{self.topic_ns}/ultrasonic/range', 10)
-        self.pub_imu = self.create_publisher(Imu, f'{self.topic_ns}/imu/data', 10)
+        self.pub_rpy = self.create_publisher(Vector3Stamped, f'{self.topic_ns}/imu/rpy_deg', 10)
         self.pub_status = self.create_publisher(DiagnosticArray, f'{self.topic_ns}/serial/status', 10)
 
         self._ser = None
@@ -71,8 +69,7 @@ class SerialSensorNode(Node):
         self._frames_ok = 0
         self._connected_port = None
 
-        self._last_accel_ms2 = None
-        self._last_gyro_rads = None
+        self._last_rpy_deg = None
 
         if self.enable_serial:
             self._reader_thread.start()
@@ -144,29 +141,6 @@ class SerialSensorNode(Node):
     def inject_bytes(self, data: bytes):
         self._parse_bytes(data)
 
-    def _publish_imu(self, stamp):
-        if not (self._last_accel_ms2 or self._last_gyro_rads):
-            return
-
-        imu = Imu()
-        imu.header.stamp = stamp
-        imu.header.frame_id = self._frame_id_imu
-        imu.orientation_covariance[0] = -1.0
-
-        if self._last_accel_ms2:
-            ax, ay, az = self._last_accel_ms2
-            imu.linear_acceleration.x = float(ax)
-            imu.linear_acceleration.y = float(ay)
-            imu.linear_acceleration.z = float(az)
-
-        if self._last_gyro_rads:
-            gx, gy, gz = self._last_gyro_rads
-            imu.angular_velocity.x = float(gx)
-            imu.angular_velocity.y = float(gy)
-            imu.angular_velocity.z = float(gz)
-
-        self.pub_imu.publish(imu)
-
     def _on_frame(self, func: int, payload: bytes):
         now = self.get_clock().now().to_msg()
 
@@ -222,22 +196,18 @@ class SerialSensorNode(Node):
             self.pub_range.publish(msg)
             return
 
-        if func == self._FUNC_IMU_ACCEL:
-            ax_g = self._read_i16_le(payload, 0) / 1000.0
-            ay_g = self._read_i16_le(payload, 2) / 1000.0
-            az_g = self._read_i16_le(payload, 4) / 1000.0
-            g_to_ms2 = 9.80665
-            self._last_accel_ms2 = (ax_g * g_to_ms2, ay_g * g_to_ms2, az_g * g_to_ms2)
-            self._publish_imu(now)
-            return
-
-        if func == self._FUNC_IMU_GYRO:
-            gx_dps = self._read_i16_le(payload, 0) / 10.0
-            gy_dps = self._read_i16_le(payload, 2) / 10.0
-            gz_dps = self._read_i16_le(payload, 4) / 10.0
-            deg_to_rad = math.pi / 180.0
-            self._last_gyro_rads = (gx_dps * deg_to_rad, gy_dps * deg_to_rad, gz_dps * deg_to_rad)
-            self._publish_imu(now)
+        if func == self._FUNC_IMU_RPY:
+            roll_deg = self._read_i16_le(payload, 0) / 100.0
+            pitch_deg = self._read_i16_le(payload, 2) / 100.0
+            yaw_deg = self._read_i16_le(payload, 4) / 100.0
+            self._last_rpy_deg = (roll_deg, pitch_deg, yaw_deg)
+            msg = Vector3Stamped()
+            msg.header.stamp = now
+            msg.header.frame_id = self._frame_id_imu
+            msg.vector.x = float(roll_deg)
+            msg.vector.y = float(pitch_deg)
+            msg.vector.z = float(yaw_deg)
+            self.pub_rpy.publish(msg)
             return
 
         self._unknown_func_count += 1

@@ -23,5 +23,6 @@ bool mpu6050_init(uint8_t addr = MPU6050_ADDR);
 void mpu6050_calibrate(void);
 void mpu6050_update(void);
 
-void mpu6050_pack_accel_g_x1000(float accel_x_g, float accel_y_g, float accel_z_g, uint8_t out6[6]);
-void mpu6050_pack_gyro_dps_x10(float gyro_x_dps, float gyro_y_dps, float gyro_z_dps, uint8_t out6[6]);
+void mpu6050_pack_accel_g_x1000(float accel_x_g, float accel_y_g, float accel_z_g, uint8_t out6[6]);// 构建 MPU 加速度数据
+void mpu6050_pack_gyro_dps_x10(float gyro_x_dps, float gyro_y_dps, float gyro_z_dps, uint8_t out6[6]);// 构建 MPU 陀螺仪数据
+void mpu6050_pack_roll_pitch_yaw_degrees(float roll_deg, float pitch_deg, float yaw_deg, uint8_t out6[6]);// 构建 MPU 角度数据
