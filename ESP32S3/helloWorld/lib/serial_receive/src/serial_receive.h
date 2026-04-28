@@ -34,6 +34,8 @@ void serial_receive_reset();
  * @param serial 串口对象
  */
 void serial_receive_update(Stream &serial);
+void serial_receive_set_debug(Stream *debug_stream);
+void serial_receive_set_debug_flags(bool print_bytes, bool print_frames, bool print_errors);
 // 提取轮子速度
 /**
  * @brief 提取轮子速度

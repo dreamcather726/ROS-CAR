@@ -16,6 +16,29 @@ static uint32_t g_target_counts_rx_ms = 0;
 static uint32_t g_last_rx_ms = 0;
 static SerialReceiveStats g_stats = {0, 0, 0, 0};
 
+static Stream *g_debug = nullptr;
+static bool g_debug_print_bytes = false;
+static bool g_debug_print_frames = true;
+static bool g_debug_print_errors = true;
+
+static void dbg_hex2(uint8_t v)
+{
+  if (!g_debug) return;
+  if (v < 16) g_debug->print('0');
+  g_debug->print(v, HEX);
+}
+
+static void dbg_print_frame10(const uint8_t frame[SERIAL_RECEIVE_FRAME_SIZE])
+{
+  if (!g_debug || !g_debug_print_frames) return;
+  g_debug->print("rx frame: ");
+  for (size_t i = 0; i < SERIAL_RECEIVE_FRAME_SIZE; i++) {
+    dbg_hex2(frame[i]);
+    if (i + 1 < SERIAL_RECEIVE_FRAME_SIZE) g_debug->print(' ');
+  }
+  g_debug->println();
+}
+
 static uint8_t checksum8(const uint8_t *bytes, size_t len)
 {
   uint8_t sum = 0;
@@ -60,12 +83,19 @@ void serial_receive_reset()
   g_last_rx_ms = 0;
   g_stats = {0, 0, 0, 0};
 }
-/**
- * @brief 处理接收到的帧
- * 
- * @param func 函数码
- * @param payload 数据负载
- */
+
+void serial_receive_set_debug(Stream *debug_stream)
+{
+  g_debug = debug_stream;
+}
+
+void serial_receive_set_debug_flags(bool print_bytes, bool print_frames, bool print_errors)
+{
+  g_debug_print_bytes = print_bytes;
+  g_debug_print_frames = print_frames;
+  g_debug_print_errors = print_errors;
+}
+
 
 static void on_frame(uint8_t func, const uint8_t payload[SERIAL_RECEIVE_DATA_SIZE])
 {
@@ -79,6 +109,14 @@ static void on_frame(uint8_t func, const uint8_t payload[SERIAL_RECEIVE_DATA_SIZ
     g_speed_right_cm_s = static_cast<float>(r) / 100.0f;
     g_speed_rx_ms = now_ms;
     g_has_speed = true;
+    if (g_debug && g_debug_print_frames) {
+      g_debug->print("rx ok func=0x");
+      dbg_hex2(func);
+      g_debug->print(" speed_cm_s left=");
+      g_debug->print(g_speed_left_cm_s, 2);
+      g_debug->print(" right=");
+      g_debug->println(g_speed_right_cm_s, 2);
+    }
     return;
   }
 
@@ -87,10 +125,23 @@ static void on_frame(uint8_t func, const uint8_t payload[SERIAL_RECEIVE_DATA_SIZ
     g_target_right_counts = read_i24_le(&payload[3]);
     g_target_counts_rx_ms = now_ms;
     g_has_target_counts = true;
+    if (g_debug && g_debug_print_frames) {
+      g_debug->print("rx ok func=0x");
+      dbg_hex2(func);
+      g_debug->print(" target_counts left=");
+      g_debug->print(g_target_left_counts);
+      g_debug->print(" right=");
+      g_debug->println(g_target_right_counts);
+    }
     return;
   }
 
   g_stats.unknown_func++;
+  if (g_debug && g_debug_print_errors) {
+    g_debug->print("rx unknown func=0x");
+    dbg_hex2(func);
+    g_debug->println();
+  }
 }
 
 /**
@@ -106,6 +157,12 @@ void serial_receive_update(Stream &serial)
       break;
     }
     const uint8_t ub = static_cast<uint8_t>(b);
+    if (g_debug && g_debug_print_bytes) {
+      g_debug->print("rx byte 0x");
+      dbg_hex2(ub);
+      g_debug->print(" pos=");
+      g_debug->println(static_cast<unsigned>(g_rx_pos));
+    }
 
     if (g_rx_pos == 0) {
       if (ub != SERIAL_RECEIVE_HEADER) {
@@ -129,8 +186,15 @@ void serial_receive_update(Stream &serial)
 
     g_rx_pos = 0;
 
+    dbg_print_frame10(g_rx_frame);
+
     if (g_rx_frame[SERIAL_RECEIVE_FRAME_SIZE - 1] != SERIAL_RECEIVE_TAIL) {
       g_stats.bad_tail++;
+      if (g_debug && g_debug_print_errors) {
+        g_debug->print("rx bad tail got 0x");
+        dbg_hex2(g_rx_frame[SERIAL_RECEIVE_FRAME_SIZE - 1]);
+        g_debug->println();
+      }
       continue;
     }
 
@@ -138,6 +202,13 @@ void serial_receive_update(Stream &serial)
     const uint8_t recv = g_rx_frame[8];
     if (calc != recv) {
       g_stats.checksum_fail++;
+      if (g_debug && g_debug_print_errors) {
+        g_debug->print("rx checksum fail calc=0x");
+        dbg_hex2(calc);
+        g_debug->print(" recv=0x");
+        dbg_hex2(recv);
+        g_debug->println();
+      }
       continue;
     }
 
