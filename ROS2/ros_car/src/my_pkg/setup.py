@@ -24,6 +24,7 @@ setup(
                
                 'serial_node = my_pkg.serial_node:main',
                 'serial_sub_demo = my_pkg.serial_sub_demo:main',
+                'car_cmd = my_pkg.car_cmd:main',
         ],
     },
 )

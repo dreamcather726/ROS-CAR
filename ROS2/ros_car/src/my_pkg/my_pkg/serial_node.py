@@ -10,7 +10,7 @@ from sensor_msgs.msg import Range
 
 import serial
 import serial.tools.list_ports
-
+from std_msgs.msg import UInt8MultiArray
 class SerialSensorNode(Node):
     def __init__(self, *, start_serial: Optional[bool] = None):
         super().__init__('serial_node')
@@ -78,7 +78,16 @@ class SerialSensorNode(Node):
         self.get_logger().info(
             f"✅ serial_node 已启动 | port={self.port} baud={self.baudrate} ns={self.topic_ns}"
         )
-
+        self.sub_tx = self.create_subscription(
+            UInt8MultiArray, '/serial/tx_frame', self.on_tx_frame, 10
+            )
+    def on_tx_frame(self, msg):
+        """接收来自 car_cmd 的串口帧，并通过串口发送"""
+        if self._ser and self._ser.is_open:
+            try:
+                self._ser.write(bytes(msg.data))
+            except Exception:
+                pass
     def _pick_port(self) -> str:
         if self.port and self.port.lower() != 'auto':
             return self.port
