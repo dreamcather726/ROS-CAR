@@ -50,6 +50,33 @@ bool button_update_released(Button *b)
   return (prev_stable == 1U) && (b->stable == 0U);
 }
 
+bool button_update_pressed(Button *b)
+{
+  if (!b) return false;
+
+  const uint32_t now_ms = millis();
+  const uint8_t raw = static_cast<uint8_t>(digitalRead(b->pin));
+  const uint8_t pressed = normalize_read(raw, b->active_low);
+
+  if (pressed != b->last_read) {
+    b->last_read = pressed;
+    b->last_change_ms = now_ms;
+  }
+
+  if ((now_ms - b->last_change_ms) < b->debounce_ms) {
+    return false;
+  }
+
+  if (pressed == b->stable) {
+    return false;
+  }
+
+  const uint8_t prev_stable = b->stable;
+  b->stable = pressed;
+
+  return (prev_stable == 0U) && (b->stable == 1U);
+}
+
 bool button_is_pressed(const Button *b)
 {
   if (!b) return false;

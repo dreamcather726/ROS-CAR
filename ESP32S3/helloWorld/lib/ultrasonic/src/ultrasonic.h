@@ -4,6 +4,7 @@
 // 引脚定义（你可以根据硬件修改）
 #define TRIG_PIN    47
 #define ECHO_PIN    48
+#define ULTRASONIC_TIMEOUT_US 10000
 
 // 初始化超声波
 void ultrasonic_init();

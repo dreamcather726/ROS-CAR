@@ -1,10 +1,10 @@
 #include "speed_pid.h"
-
+//速度环PID参数（ P=0.5, I=1.4, D=0.2）
 // PID初始化（只设置参数，不清零状态）
 void PID_Init(PID *pid, float Kp, float Ki, float Kd, float max, float min)
 {
     // 1. 检查参数有效性（防止除0）
-    if(Kp == 0.0f || Ki == 0.0f || Kd == 0.0f || max == min) return;
+    if(max == min) return;
 
     // 2. 保存参数（不改变 Ki）
     pid->P = Kp;
@@ -50,5 +50,3 @@ float PID_IncPIDCal(PID *pid, float NowValue, float AimValue)
 
     return pid->Output;
 }
-
-//速度环PID参数（ P=0.5, I=1.4, D=0.2）

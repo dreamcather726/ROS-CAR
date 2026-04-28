@@ -18,20 +18,22 @@ void motor_init()
 
 void motorA_set(int speed)
 {
+  speed = constrain(speed, -255, 255);
   const bool forward = (speed >= 0);
   digitalWrite(MOTOR_DIRA_PIN, forward ? HIGH : LOW);
-  
-  analogWrite(MOTOR_PWMA_PIN, speed);
+
+  analogWrite(MOTOR_PWMA_PIN, abs(speed));
   delay(1);
 }
 
 void motorB_set(int speed)
 {
+  speed = constrain(speed, -255, 255);
   const bool forward = (speed >= 0);
   digitalWrite(MOTOR_DIRB_PIN, forward ? HIGH : LOW);
  
-  analogWrite(MOTOR_PWMB_PIN, speed);
-   delay(1);
+  analogWrite(MOTOR_PWMB_PIN, abs(speed));
+  delay(1);
 }
 
 void motorA_stop()

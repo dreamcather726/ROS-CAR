@@ -14,8 +14,7 @@ float ultrasonic_get_distance() {
     delayMicroseconds(10);
     digitalWrite(TRIG_PIN, LOW);
 
-    // 读回响信号（超时 30ms = 约 5 米）
-    long duration = pulseIn(ECHO_PIN, HIGH, 30000);
+    long duration = pulseIn(ECHO_PIN, HIGH, ULTRASONIC_TIMEOUT_US);
 
     // 算距离：声速 340m/s，往返除以2
     float distance = (duration * 0.034) / 2.0;
