@@ -163,8 +163,8 @@ void wheel_encoder_get_counts(int32_t *left, int32_t *right)
   const int32_t r = g_right;
   interrupts();
 
-  if (left) *left = l;
-  if (right) *right = r;
+  if (left) *left = l * static_cast<int32_t>(WHEEL_ENC_L_SIGN);
+  if (right) *right = r * static_cast<int32_t>(WHEEL_ENC_R_SIGN);
 }
 
 int32_t wheel_encoder_get_left()
@@ -172,7 +172,7 @@ int32_t wheel_encoder_get_left()
   noInterrupts();
   const int32_t l = g_left;
   interrupts();
-  return l;
+  return l * static_cast<int32_t>(WHEEL_ENC_L_SIGN);
 }
 
 int32_t wheel_encoder_get_right()
@@ -180,7 +180,7 @@ int32_t wheel_encoder_get_right()
   noInterrupts();
   const int32_t r = g_right;
   interrupts();
-  return r;
+  return r * static_cast<int32_t>(WHEEL_ENC_R_SIGN);
 }
 
 void wheel_encoder_reset()
@@ -201,6 +201,6 @@ void wheel_encoder_get_and_reset(int32_t *left, int32_t *right)
   g_right = 0;
   interrupts();
 
-  if (left) *left = l;
-  if (right) *right = r;
+  if (left) *left = l * static_cast<int32_t>(WHEEL_ENC_L_SIGN);
+  if (right) *right = r * static_cast<int32_t>(WHEEL_ENC_R_SIGN);
 }

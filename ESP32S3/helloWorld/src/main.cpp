@@ -9,15 +9,20 @@
 #include "speed_pid.h"
 #include <odom_timer.h>
 #include <serial_receive.h> 
+#include <button.h>
+
+static Button button_up;
+static Button button_down;
+
 #define SERIAL_BAUD 115200
 
 static constexpr uint8_t FUNC_ODOM_COUNTS = 0x01;// 0x01: 速度计数
 static constexpr uint8_t FUNC_ODOM_SPEED = 0x02;// 0x02: 速度
 static constexpr uint8_t FUNC_ODOM_DISTANCE = 0x03;// 0x03: 距离
 static constexpr uint8_t FUNC_IMU_ROLL_PITCH_YAW = 0x04;//角度
-static constexpr bool SEND_TO_MUSEPI = true;// 发送到 MUSEPI
-static constexpr bool DEBUG_PID_PRINT = false;// 打印 PID 值
-static constexpr bool DEBUG_SERIAL_RX = true;// 打印串口接收数据
+static constexpr bool SEND_TO_MUSEPI = false;// 发送到 MUSEPI
+static constexpr bool DEBUG_PID_PRINT = true;// 打印 PID 值
+static constexpr bool DEBUG_SERIAL_RX = false;// 打印串口接收数据
 
 // PID 周期 100ms（必须固定！）
 static constexpr uint32_t PID_PERIOD_US = 100000U;// 100ms 周期
@@ -55,20 +60,22 @@ void setup() {
     serial_receive_set_debug(&Serial);
     serial_receive_set_debug_flags(true, true, true);
   } 
+  button_init(&button_up, 19, true, true, 30);// 初始化上按钮
+  button_init(&button_down, 20, true, true, 30);// 初始化下按钮
   ultrasonic_init();// 初始化超声波传感器
   wheel_encoder_init();// 初始化轮速编码器
-  mpu6050_init();// 初始化 MPUU
-  mpu6050_calibrate();// 校准 MPUU
+  // mpu6050_init();// 初始化 MPUU
+  // mpu6050_calibrate();// 校准 MPUU
   wheel_encoder_speed_init();// 初始化轮速编码器速度
   motor_init();// 初始化电机
   timer_init(&pid_timer, 1, PID_PERIOD_US);// 初始化 PID 周期
   timer_init(&sensor_read_timer, 2, SENSOR_READ_PERIOD_US);// 初始化传感器读取周期
   timer_init(&tx_timer, 0, TX_PERIOD_US);// 初始化发送周期
-  // PID_Init(&pidL,0.5f, 1.4f, 0.2f, 255.0f, -255.0f);
+  // PID_Init(&pidL,0.1.35f, 1.4f, 0.02f, 255.0f, -255.0f);
   pidL = {};// 初始化 PID 结构体
   pidR = {};// 初始化 PID 结构体
-  PID_Init(&pidL, pidL.P+1.35f, pidL.I+1.2f, pidL.D+0.02f, 255.0f, -255.0f);// 初始化 PID
-  PID_Init(&pidR, pidR.P+1.35f, pidR.I+1.2f, pidR.D+0.02f, 255.0f, -255.0f);// 初始化 PID
+  PID_Init(&pidL, pidL.P+1.2f, pidL.I+0.55f, pidL.D, 255.0f, -255.0f);// 初始化 PID
+  PID_Init(&pidR, pidR.P+1.2f, pidR.I+0.55f, pidR.D, 255.0f, -255.0f);// 初始化 PID
 }
 void loop() {
   serial_receive_update(Serial);
@@ -87,7 +94,6 @@ void loop() {
     cmd_target_right_counts = rx_target_right_counts;
   }
 
-
   if (timer_due(&pid_timer)) {// PID 周期
     wheel_encoder_get_odom(&g_left_count, &g_right_count, &g_left_cm_s, &g_right_cm_s, 0U);// 获取轮速编码器速度
     left_cm_s = g_left_cm_s;
@@ -100,11 +106,11 @@ void loop() {
     motorB_set(pwmR);// 设置右轮 PWM 值
     
     if (DEBUG_PID_PRINT && !SEND_TO_MUSEPI) {
-      Serial.print(target_cm_s);
+      Serial.print(target_left_cm_s);
       Serial.print(",");
-      Serial.println(left_cm_s);
-      // Serial.print(",");
-      // Serial.println(pwmL);
+      Serial.print(left_cm_s);
+      Serial.print(",");
+      Serial.println(pwmL);
       // Serial.print(",");
       // Serial.print(right_cm_s);
       // Serial.print(",");

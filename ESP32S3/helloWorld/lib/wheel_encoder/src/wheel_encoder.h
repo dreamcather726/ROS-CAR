@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <motor_driver.h>
 
 // 默认编码器引脚（A相接中断，B相用于判断方向）
 static constexpr uint8_t WHEEL_ENC_L_A_PIN = 17;// 左轮编码器A引脚
@@ -8,8 +9,11 @@ static constexpr uint8_t WHEEL_ENC_L_B_PIN = 18;// 左轮编码器B引脚
 static constexpr uint8_t WHEEL_ENC_R_A_PIN = 3;// 右轮编码器A引脚
 static constexpr uint8_t WHEEL_ENC_R_B_PIN = 46;// 右轮编码器B引脚
 
-static constexpr float WHEEL_ODOM_DIAMETER_CM = 6.5f;// 轮子直径（单位：厘米）
-static constexpr float WHEEL_ODOM_COUNTS_PER_REV = 1335.0f; // 每转一次的计数
+static constexpr int8_t WHEEL_ENC_L_SIGN = MOTOR_A_INVERT_DIR ? 1 : -1;// 左轮方向修正：1=不变，-1=取反
+static constexpr int8_t WHEEL_ENC_R_SIGN = MOTOR_B_INVERT_DIR ? 1 : -1;// 右轮方向修正：1=不变，-1=取反
+
+static constexpr float WHEEL_ODOM_DIAMETER_CM = 7.0f;// 轮子直径（单位：厘米）
+static constexpr float WHEEL_ODOM_COUNTS_PER_REV = 600.0f; // 每转一次的计数
 static constexpr float WHEEL_ODOM_CM_PER_COUNT = (WHEEL_ODOM_DIAMETER_CM * PI) / WHEEL_ODOM_COUNTS_PER_REV; // 每个计数对应的厘米数
 // 转换计数为厘米
 inline float wheel_encoder_counts_to_cm(int32_t counts)

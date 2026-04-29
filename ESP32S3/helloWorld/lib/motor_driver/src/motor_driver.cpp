@@ -19,7 +19,8 @@ void motor_init()
 void motorA_set(int speed)
 {
   speed = constrain(speed, -255, 255);
-  const bool forward = (speed >= 0);
+  bool forward = (speed >= 0);
+  if (MOTOR_A_INVERT_DIR) forward = !forward;
   digitalWrite(MOTOR_DIRA_PIN, forward ? HIGH : LOW);
 
   analogWrite(MOTOR_PWMA_PIN, abs(speed));
@@ -29,7 +30,8 @@ void motorA_set(int speed)
 void motorB_set(int speed)
 {
   speed = constrain(speed, -255, 255);
-  const bool forward = (speed >= 0);
+  bool forward = (speed >= 0);
+  if (MOTOR_B_INVERT_DIR) forward = !forward;
   digitalWrite(MOTOR_DIRB_PIN, forward ? HIGH : LOW);
  
   analogWrite(MOTOR_PWMB_PIN, abs(speed));
