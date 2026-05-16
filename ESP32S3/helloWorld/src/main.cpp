@@ -21,8 +21,8 @@ static constexpr uint8_t FUNC_ODOM_SPEED = 0x02;// 0x02: 速度
 static constexpr uint8_t FUNC_ODOM_DISTANCE = 0x03;// 0x03: 距离
 static constexpr uint8_t FUNC_IMU_ROLL_PITCH_YAW = 0x04;//角度
 static constexpr bool SEND_TO_MUSEPI = false;// 发送到 MUSEPI
-static constexpr bool DEBUG_PID_PRINT = true;// 打印 PID 值
-static constexpr bool DEBUG_SERIAL_RX = false;// 打印串口接收数据
+static constexpr bool DEBUG_PID_PRINT = false;// 打印 PID 值
+static constexpr bool DEBUG_SERIAL_RX = true;// 打印串口接收数据
 
 // PID 周期 100ms（必须固定！）
 static constexpr uint32_t PID_PERIOD_US = 100000U;// 100ms 周期
@@ -64,8 +64,8 @@ void setup() {
   button_init(&button_down, 20, true, true, 30);// 初始化下按钮
   ultrasonic_init();// 初始化超声波传感器
   wheel_encoder_init();// 初始化轮速编码器
-  // mpu6050_init();// 初始化 MPUU
-  // mpu6050_calibrate();// 校准 MPUU
+  mpu6050_init();// 初始化 MPUU
+  mpu6050_calibrate();// 校准 MPUU
   wheel_encoder_speed_init();// 初始化轮速编码器速度
   motor_init();// 初始化电机
   timer_init(&pid_timer, 1, PID_PERIOD_US);// 初始化 PID 周期
@@ -81,6 +81,7 @@ void loop() {
   serial_receive_update(Serial);
   float rx_target_left_cm_s = 1.0f;
   float rx_target_right_cm_s =  1.0f;
+  // 从串口接收速度目标
   if (serial_receive_take_wheel_speed_cm_s(&rx_target_left_cm_s, &rx_target_right_cm_s, nullptr)) {
     target_left_cm_s = rx_target_left_cm_s;
     target_right_cm_s = rx_target_right_cm_s;
@@ -117,13 +118,20 @@ void loop() {
       // Serial.println(pwmR);
     }
   }
-
+  
   if (timer_due(&sensor_read_timer)) {// 传感器读取周期
     g_ultrasonic_cm = ultrasonic_get_distance();// 获取超声波传感器距离
     mpu6050_update();// 更新 MPUU 数据
     g_roll_deg = roll;
     g_pitch_deg = pitch;
     g_yaw_deg = yaw;
+    if (DEBUG_SERIAL_RX) {
+      Serial.print(g_roll_deg);
+      Serial.print(",");
+      Serial.print(g_pitch_deg);
+      Serial.print(",");
+      Serial.println(g_yaw_deg);
+    }
     }
 
     

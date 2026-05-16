@@ -40,7 +40,7 @@ bool mpu6050_init(uint8_t addr)
     Wire.beginTransmission(_mpu_addr);
     Wire.write(0x75);
     Wire.endTransmission();
-    Wire.requestFrom(_mpu_addr, 1);
+    Wire.requestFrom(static_cast<uint8_t>(_mpu_addr), static_cast<uint8_t>(1));
     uint8_t id = Wire.read();
     if(id != 0x70)
     {
@@ -73,7 +73,7 @@ static void mpu6050_read_raw(void)
     Wire.beginTransmission(_mpu_addr);
     Wire.write(0x3B);
     Wire.endTransmission(false);
-    Wire.requestFrom(_mpu_addr, 14);
+    Wire.requestFrom(static_cast<uint8_t>(_mpu_addr), static_cast<uint8_t>(14));
 
     ax = Wire.read() << 8 | Wire.read();
     ay = Wire.read() << 8 | Wire.read();
