@@ -27,22 +27,20 @@ bool mpu6050_init(uint8_t addr)
     _mpu_addr = addr;
     Wire.begin(I2C_SDA_PIN,I2C_SCL_PIN);
     Wire.setClock(100000);
-    delay(100);
 
     // 唤醒
     Wire.beginTransmission(_mpu_addr);
     Wire.write(0x6B);
     Wire.write(0x00);
     Wire.endTransmission();
-    delay(50);
 
-    // 读取设备ID 0x70
+   
     Wire.beginTransmission(_mpu_addr);
     Wire.write(0x75);
     Wire.endTransmission();
     Wire.requestFrom(static_cast<uint8_t>(_mpu_addr), static_cast<uint8_t>(1));
     uint8_t id = Wire.read();
-    if(id != 0x70)
+    if(id != 0x68)
     {
         return false;
     }
@@ -111,110 +109,79 @@ void mpu6050_calibrate(void)
     Serial.println("校准完成！");
 }
 
-// 更新：读原始数据 + 卡尔曼解算角度
-  void mpu6050_update(void)
+void mpu6050_update(void)
 {
     const uint32_t now_ms = millis();
     float dt = static_cast<float>(now_ms - _lasttime) / 1000.0f;
     _lasttime = now_ms;
     if (dt <= 0.0f) dt = 0.0f;
-    if (dt > 0.2f) dt = 0.02f;
+    if (dt > 0.2f) dt = 0.02f;          // 防止异常间隔过大
 
-      mpu6050_read_raw();
+    // 读取原始数据
+    mpu6050_read_raw();
 
-    // 单位换算 + 偏移补偿
+    // 单位换算及偏移补偿
     float axf = (ax - ax_offset) / 16384.0f;
     float ayf = (ay - ay_offset) / 16384.0f;
-    float azf = az / 16384.0f;
+    float azf = az / 16384.0f;           // 若需要 az_offset 可自行添加
 
     float gxf = (gx - gx_offset) / 131.0f;
     float gyf = (gy - gy_offset) / 131.0f;
     float gzf = (gz - gz_offset) / 131.0f;
 
+    // 静止时动态更新 yaw 轴陀螺仪零偏（可选）
     if (dt > 0.0f) {
         const float amag = sqrtf(axf * axf + ayf * ayf + azf * azf);
         const bool accel_still = fabsf(amag - 1.0f) < 0.12f;
         const bool gyro_still = (fabsf(gxf) < 1.2f) && (fabsf(gyf) < 1.2f) && (fabsf(gzf) < 1.2f);
         const bool is_still = accel_still && gyro_still;
         if (is_still) {
-            constexpr float alpha = 0.02f;
+            const float alpha = 0.02f;
             gz_bias_dps = (1.0f - alpha) * gz_bias_dps + alpha * gzf;
         }
-        gzf -= gz_bias_dps;
+        gzf -= gz_bias_dps;   // 补偿后的偏航角速度
     }
 
-    const float roll_rad = roll * deg2rad;
+    // --- 陀螺仪积分（欧拉角微分方程）---
+    const float roll_rad  = roll * deg2rad;
     const float pitch_rad = pitch * deg2rad;
     float cos_pitch = cosf(pitch_rad);
     if (fabsf(cos_pitch) < 1e-4f) cos_pitch = (cos_pitch >= 0.0f) ? 1e-4f : -1e-4f;
 
+    // 将机体角速度转换为欧拉角速度
     float roll_v  = gxf + (sinf(pitch_rad) * sinf(roll_rad) / cos_pitch) * gyf +
                     (sinf(pitch_rad) * cosf(roll_rad) / cos_pitch) * gzf;
     float pitch_v = cosf(roll_rad) * gyf - sinf(roll_rad) * gzf;
 
-    gyro_roll  = roll + dt * roll_v;
-    gyro_pitch = pitch + dt * pitch_v;
+    // 先验估计（仅陀螺仪积分）
+    float gyro_roll_new  = roll  + dt * roll_v;
+    float gyro_pitch_new = pitch + dt * pitch_v;
 
-    // 协方差更新
+    // --- 加速度计计算角度（绝对参考）---
+    float acc_roll_new  = atan2f(ayf, azf) * rad2deg;
+    float acc_pitch_new = -atan2f(axf, sqrtf(ayf * ayf + azf * azf)) * rad2deg;
+
+    // --- 卡尔曼融合（roll 和 pitch 独立）---
+    // 协方差预测（增加过程噪声）
     e_P[0][0] += 0.0025f;
     e_P[1][1] += 0.0025f;
 
+    // 卡尔曼增益
     float k0 = e_P[0][0] / (e_P[0][0] + 0.3f);
     float k1 = e_P[1][1] / (e_P[1][1] + 0.3f);
 
-    acc_roll  = atan2f(ayf, azf) * rad2deg;
-    acc_pitch = -atan2f(axf, sqrtf(ayf * ayf + azf * azf)) * rad2deg;
+    // 融合
+    roll  = gyro_roll_new  + k0 * (acc_roll_new  - gyro_roll_new);
+    pitch = gyro_pitch_new + k1 * (acc_pitch_new - gyro_pitch_new);
 
-    // 卡尔曼融合
-    roll  = gyro_roll  + k0 * (acc_roll - gyro_roll);
-    pitch = gyro_pitch + k1 * (acc_pitch - gyro_pitch);
-
-    // 协方差修正
+    // 协方差更新
     e_P[0][0] = (1.0f - k0) * e_P[0][0];
     e_P[1][1] = (1.0f - k1) * e_P[1][1];
 
-    // Yaw 纯陀螺积分（无磁传感器必然漂移）
+    // --- 偏航角：纯陀螺积分（无磁力计修正，必然漂移）---
     yaw += gzf * dt;
-}
 
-static inline void write_i16_le(uint8_t *out, int16_t v)
-{
-    out[0] = static_cast<uint8_t>(v & 0xFF);
-    out[1] = static_cast<uint8_t>((v >> 8) & 0xFF);
-}
-
-static inline int16_t clamp_i16(int32_t v)
-{
-    if (v > 32767) return 32767;
-    if (v < -32768) return -32768;
-    return static_cast<int16_t>(v);
-}
-
-void mpu6050_pack_accel_g_x1000(float accel_x_g, float accel_y_g, float accel_z_g, uint8_t out6[6])
-{
-    const int16_t ax_out = clamp_i16(static_cast<int32_t>(accel_x_g * 1000.0f));
-    const int16_t ay_out = clamp_i16(static_cast<int32_t>(accel_y_g * 1000.0f));
-    const int16_t az_out = clamp_i16(static_cast<int32_t>(accel_z_g * 1000.0f));
-    write_i16_le(&out6[0], ax_out);
-    write_i16_le(&out6[2], ay_out);
-    write_i16_le(&out6[4], az_out);
-}
-
-void mpu6050_pack_gyro_dps_x10(float gyro_x_dps, float gyro_y_dps, float gyro_z_dps, uint8_t out6[6])
-{
-    const int16_t gx_out = clamp_i16(static_cast<int32_t>(gyro_x_dps * 10.0f));
-    const int16_t gy_out = clamp_i16(static_cast<int32_t>(gyro_y_dps * 10.0f));
-    const int16_t gz_out = clamp_i16(static_cast<int32_t>(gyro_z_dps * 10.0f));
-    write_i16_le(&out6[0], gx_out);
-    write_i16_le(&out6[2], gy_out);
-    write_i16_le(&out6[4], gz_out);
-}
-void mpu6050_pack_roll_pitch_yaw_degrees(float roll_deg, float pitch_deg, float yaw_deg, uint8_t out6[6])
-{
-    const int16_t rx_out = clamp_i16(static_cast<int32_t>(lroundf(roll_deg * 10.0f)));
-    const int16_t ry_out = clamp_i16(static_cast<int32_t>(lroundf(pitch_deg * 10.0f)));
-    const int16_t rz_out = clamp_i16(static_cast<int32_t>(lroundf(yaw_deg * 10.0f)));
-    write_i16_le(&out6[0], rx_out);
-    write_i16_le(&out6[2], ry_out);
-    write_i16_le(&out6[4], rz_out);
+    // 可选：限制 yaw 范围到 [0, 360) 或 [-180, 180)
+    if (yaw > 360.0f) yaw -= 360.0f;
+    if (yaw < 0.0f)   yaw += 360.0f;
 }

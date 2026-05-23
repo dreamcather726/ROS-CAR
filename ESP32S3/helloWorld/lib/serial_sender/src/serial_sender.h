@@ -29,22 +29,29 @@ void ss_pack_int_le(int32_t value,
                     uint8_t byte_count,
                     uint8_t out[]);
 
-// 直接发送左右编码器计数。
-// 这个函数内部固定使用 6 字节 payload，
-// 主程序就不用自己再声明 data_counts[6] 了。
-void ss_send_encoder_counts(HardwareSerial &serial,
-                            uint8_t func,
-                            int32_t left_count,
-                            int32_t right_count,
-                            bool flush_after_send = true);
+void ss_pack_mpu6050_raw_i16_le(int16_t ax,
+                                int16_t ay,
+                                int16_t az,
+                                int16_t gx,
+                                int16_t gy,
+                                int16_t gz,
+                                uint8_t out12[12]);
 
-// 直接发送超声波距离。
-// 发送格式：距离(cm) * 10 后转成 int16，再走 CRC 帧发送。
-// 如果距离无效（小于 0），发送值为 -1。
-void ss_send_ultrasonic_distance_cm_x10(HardwareSerial &serial,
-                                        uint8_t func,
-                                        float distance_cm,
-                                        bool flush_after_send = true);
+void ss_pack_rpy_deg_x10_i16_le(float roll_deg,
+                                float pitch_deg,
+                                float yaw_deg,
+                                uint8_t out6[6]);
+
+void ss_pack_mpu6050_bundle(int16_t ax,
+                            int16_t ay,
+                            int16_t az,
+                            int16_t gx,
+                            int16_t gy,
+                            int16_t gz,
+                            float roll_deg,
+                            float pitch_deg,
+                            float yaw_deg,
+                            uint8_t out18[18]);
 
 // 构建一帧。
 // 返回值：实际组好的帧长度；如果返回 0，说明 payload_len 超出限制。
@@ -55,11 +62,8 @@ uint8_t ss_build_frame(uint8_t func,// 功能码
                        const uint8_t payload[],// 数据区
                        uint8_t payload_len,// 数据区长度
                        uint8_t out[SERIAL_SENDER_MAX_FRAME_SIZE]);
-
-// 发送一帧
 void ss_send(HardwareSerial &serial,
              uint8_t func,
              const uint8_t payload[],
              uint8_t payload_len,
-             bool flush_after_send = true // 是否发送后刷新串口缓冲区
-             );
+             bool flush_after_send);

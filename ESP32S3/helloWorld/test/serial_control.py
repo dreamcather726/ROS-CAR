@@ -3,19 +3,23 @@ import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
 import threading
+import time
+import math
 
 
 HEADER = 0xAA
 TAIL = 0xBB
 
-FUNC_ODOM_COUNTS = 0x01
-FUNC_ODOM_SPEED = 0x02
-FUNC_ODOM_DISTANCE = 0x03
-FUNC_IMU_RPY = 0x04
+FUNC_ENCODER_COUNTS = 0x01
+FUNC_IMU_BUNDLE = 0x02
 FUNC_WHEEL_SPEED = 0x10
 FUNC_WHEEL_TARGET_COUNTS = 0x11
 
 MAX_PAYLOAD_SIZE = 32
+
+WHEEL_DIAMETER_CM = 7.0
+WHEEL_COUNTS_PER_REV = 600.0
+WHEEL_CM_PER_COUNT = (WHEEL_DIAMETER_CM * math.pi) / WHEEL_COUNTS_PER_REV
 
 
 def _crc16(b: bytes) -> int:
@@ -102,27 +106,22 @@ def _parse_frame(frame: bytes) -> str:
     func = data[0]
     payload = data[1:]
 
-    if func == FUNC_ODOM_COUNTS and len(payload) >= 6:
+    if func == FUNC_ENCODER_COUNTS and len(payload) >= 6:
         left = _read_i24_le(payload, 0)
         right = _read_i24_le(payload, 3)
-        return f"odom_counts left={left} right={right}"
+        return f"enc_counts left={left} right={right}"
 
-    if func == FUNC_ODOM_SPEED and len(payload) >= 6:
-        left = _read_i16_le(payload, 0) / 100.0
-        right = _read_i16_le(payload, 2) / 100.0
-        return f"odom_speed left={left:.2f}cm/s right={right:.2f}cm/s"
-
-    if func == FUNC_ODOM_DISTANCE and len(payload) >= 2:
-        dist_raw = _read_i16_le(payload, 0)
-        if dist_raw == -1:
-            return "ultrasonic distance=invalid"
-        return f"ultrasonic distance={dist_raw / 10.0:.1f}cm"
-
-    if func == FUNC_IMU_RPY and len(payload) >= 6:
-        roll = _read_i16_le(payload, 0) / 10.0
-        pitch = _read_i16_le(payload, 2) / 10.0
-        yaw = _read_i16_le(payload, 4) / 10.0
-        return f"imu_rpy roll={roll:.1f} pitch={pitch:.1f} yaw={yaw:.1f}"
+    if func == FUNC_IMU_BUNDLE and len(payload) >= 18:
+        ax = _read_i16_le(payload, 0)
+        ay = _read_i16_le(payload, 2)
+        az = _read_i16_le(payload, 4)
+        gx = _read_i16_le(payload, 6)
+        gy = _read_i16_le(payload, 8)
+        gz = _read_i16_le(payload, 10)
+        roll = _read_i16_le(payload, 12) / 10.0
+        pitch = _read_i16_le(payload, 14) / 10.0
+        yaw = _read_i16_le(payload, 16) / 10.0
+        return f"imu raw=({ax},{ay},{az},{gx},{gy},{gz}) rpy=({roll:.1f},{pitch:.1f},{yaw:.1f})"
 
     return f"func=0x{func:02X} payload={_hex(payload)}"
 
@@ -146,6 +145,8 @@ class SerialControlApp:
         self._reader_stop = threading.Event()
         self._reader_thread = None
         self._rx_buffer = bytearray()
+        self._last_counts = None
+        self._last_counts_t = None
 
         self.var_port = tk.StringVar(value="")
         self.var_baud = tk.StringVar(value="115200")
@@ -320,9 +321,53 @@ class SerialControlApp:
             frame = bytes(self._rx_buffer[:frame_len])
             del self._rx_buffer[:frame_len]
 
-            parsed = _parse_frame(frame)
+            parsed = self._parse_frame_with_speed(frame)
             frame_hex = _hex(frame)
             self._root.after(0, lambda fh=frame_hex, ps=parsed: self._log_rx(f"{fh} | {ps}"))
+
+    def _parse_frame_with_speed(self, frame: bytes) -> str:
+        if len(frame) < 6:
+            return "帧太短"
+        if frame[0] != HEADER or frame[-1] != TAIL:
+            return "帧头或帧尾错误"
+
+        length = frame[1]
+        expect_len = 1 + 1 + length + 2 + 1
+        if len(frame) != expect_len:
+            return "帧长度不匹配"
+
+        data = frame[2:2 + length]
+        recv_crc = frame[2 + length] | (frame[3 + length] << 8)
+        calc_crc = _crc16(bytes([length]) + data)
+        if recv_crc != calc_crc:
+            return f"CRC错误 calc=0x{calc_crc:04X} recv=0x{recv_crc:04X}"
+
+        if len(data) < 1:
+            return "数据区为空"
+
+        func = data[0]
+        payload = data[1:]
+
+        if func == FUNC_ENCODER_COUNTS and len(payload) >= 6:
+            left = _read_i24_le(payload, 0)
+            right = _read_i24_le(payload, 3)
+
+            now = time.monotonic()
+            speed_part = ""
+            if self._last_counts is not None and self._last_counts_t is not None:
+                dt = now - self._last_counts_t
+                if dt > 1e-6:
+                    dl = left - self._last_counts[0]
+                    dr = right - self._last_counts[1]
+                    v_l = (dl * WHEEL_CM_PER_COUNT) / dt
+                    v_r = (dr * WHEEL_CM_PER_COUNT) / dt
+                    speed_part = f" v=({v_l:.2f},{v_r:.2f})cm/s"
+
+            self._last_counts = (left, right)
+            self._last_counts_t = now
+            return f"enc_counts left={left} right={right}{speed_part}"
+
+        return _parse_frame(frame)
 
     def _update_mode_labels(self) -> None:
         if self.var_mode.get() == "speed":

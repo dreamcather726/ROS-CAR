@@ -1,6 +1,19 @@
 #include "serial_sender.h"
 #include <math.h>
 
+static inline int16_t ss_clamp_i16(int32_t v) {
+  if (v > 32767) return 32767;
+  if (v < -32768) return -32768;
+  return static_cast<int16_t>(v);
+}
+
+static inline float ss_wrap_deg_180(float deg) {
+  float x = fmodf(deg, 360.0f);
+  if (x >= 180.0f) x -= 360.0f;
+  if (x < -180.0f) x += 360.0f;
+  return x;
+}
+
 // 计算 CRC16。
 // 这里使用串口和工业协议里很常见的 CRC16-Modbus。
 // 初学时只要记住：按字节循环，再按位循环即可。
@@ -32,53 +45,57 @@ void ss_pack_int_le(int32_t value, uint8_t byte_count, uint8_t out[]) {
   }
 }
 
-void ss_send_encoder_counts(HardwareSerial &serial,
-                            uint8_t func,
-                            int32_t left_count,
-                            int32_t right_count,
-                            bool flush_after_send) {
-  uint8_t payload6[6];
-  uint8_t frame[SERIAL_SENDER_MAX_FRAME_SIZE];
-  ss_pack_int_le(left_count, 3, &payload6[0]);
-  ss_pack_int_le(right_count, 3, &payload6[3]);
+void ss_pack_mpu6050_raw_i16_le(int16_t ax,
+                                int16_t ay,
+                                int16_t az,
+                                int16_t gx,
+                                int16_t gy,
+                                int16_t gz,
+                                uint8_t out12[12]) {
+  if (out12 == nullptr) return;
 
-  uint8_t frame_len = ss_build_frame(func, payload6, 6, frame);
-  if (frame_len == 0) {
-    return;
-  }
+  ss_pack_int_le(ax, 2, &out12[0]);
+  ss_pack_int_le(ay, 2, &out12[2]);
+  ss_pack_int_le(az, 2, &out12[4]);
 
-  serial.write(frame, frame_len);
-  if (flush_after_send) {
-    serial.flush();
-  }
+  ss_pack_int_le(gx, 2, &out12[6]);
+  ss_pack_int_le(gy, 2, &out12[8]);
+  ss_pack_int_le(gz, 2, &out12[10]);
 }
 
-void ss_send_ultrasonic_distance_cm_x10(HardwareSerial &serial,
-                                        uint8_t func,
-                                        float distance_cm,
-                                        bool flush_after_send) {
-  int16_t distance_x10 = -1;
-  if (distance_cm >= 0.0f) {
-    long scaled = lroundf(distance_cm * 10.0f);
-    if (scaled > 32767L) {
-      scaled = 32767L;
-    }
-    distance_x10 = static_cast<int16_t>(scaled);
-  }
+void ss_pack_rpy_deg_x10_i16_le(float roll_deg,
+                                float pitch_deg,
+                                float yaw_deg,
+                                uint8_t out6[6]) {
+  if (out6 == nullptr) return;
 
-  uint8_t payload2[2];
-  uint8_t frame[SERIAL_SENDER_MAX_FRAME_SIZE];
-  ss_pack_int_le(distance_x10, 2, payload2);
+  const float r_deg = ss_wrap_deg_180(roll_deg);
+  const float p_deg = ss_wrap_deg_180(pitch_deg);
+  const float y_deg = ss_wrap_deg_180(yaw_deg);
 
-  uint8_t frame_len = ss_build_frame(func, payload2, 2, frame);
-  if (frame_len == 0) {
-    return;
-  }
+  const int16_t r = ss_clamp_i16(static_cast<int32_t>(lroundf(r_deg * 10.0f)));
+  const int16_t p = ss_clamp_i16(static_cast<int32_t>(lroundf(p_deg * 10.0f)));
+  const int16_t y = ss_clamp_i16(static_cast<int32_t>(lroundf(y_deg * 10.0f)));
 
-  serial.write(frame, frame_len);
-  if (flush_after_send) {
-    serial.flush();
-  }
+  ss_pack_int_le(r, 2, &out6[0]);
+  ss_pack_int_le(p, 2, &out6[2]);
+  ss_pack_int_le(y, 2, &out6[4]);
+}
+
+void ss_pack_mpu6050_bundle(int16_t ax,
+                            int16_t ay,
+                            int16_t az,
+                            int16_t gx,
+                            int16_t gy,
+                            int16_t gz,
+                            float roll_deg,
+                            float pitch_deg,
+                            float yaw_deg,
+                            uint8_t out18[18]) {
+  if (out18 == nullptr) return;
+
+  ss_pack_mpu6050_raw_i16_le(ax, ay, az, gx, gy, gz, &out18[0]);
+  ss_pack_rpy_deg_x10_i16_le(roll_deg, pitch_deg, yaw_deg, &out18[12]);
 }
 
 // 构建发送数据帧。
