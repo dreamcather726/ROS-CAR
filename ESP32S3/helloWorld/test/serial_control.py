@@ -2,25 +2,42 @@ import struct
 import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
+import threading
 
 
 HEADER = 0xAA
 TAIL = 0xBB
 
+FUNC_ODOM_COUNTS = 0x01
+FUNC_ODOM_SPEED = 0x02
+FUNC_ODOM_DISTANCE = 0x03
+FUNC_IMU_RPY = 0x04
 FUNC_WHEEL_SPEED = 0x10
 FUNC_WHEEL_TARGET_COUNTS = 0x11
 
-
-def _checksum8(b: bytes) -> int:
-    return sum(b) & 0xFF
+MAX_PAYLOAD_SIZE = 32
 
 
-def _build_frame(func: int, payload6: bytes) -> bytes:
-    if len(payload6) != 6:
-        raise ValueError("payload must be 6 bytes")
-    head = bytes([HEADER, func & 0xFF]) + payload6
-    chk = _checksum8(head)
-    return head + bytes([chk, TAIL])
+def _crc16(b: bytes) -> int:
+    crc = 0xFFFF
+    for one_byte in b:
+        crc ^= one_byte
+        for _ in range(8):
+            if (crc & 0x0001) != 0:
+                crc = (crc >> 1) ^ 0xA001
+            else:
+                crc = crc >> 1
+    return crc & 0xFFFF
+
+
+def _build_frame(func: int, payload: bytes) -> bytes:
+    if len(payload) > MAX_PAYLOAD_SIZE:
+        raise ValueError("payload too long")
+    data = bytes([func & 0xFF]) + payload
+    length = len(data)
+    crc_input = bytes([length]) + data
+    crc = _crc16(crc_input)
+    return bytes([HEADER, length]) + data + bytes([crc & 0xFF, (crc >> 8) & 0xFF, TAIL])
 
 
 def build_wheel_speed_frame(left_cm_s: float, right_cm_s: float) -> bytes:
@@ -48,6 +65,68 @@ def _hex(b: bytes) -> str:
     return " ".join(f"{x:02X}" for x in b)
 
 
+def _read_i16_le(data: bytes, offset: int) -> int:
+    value = data[offset] | (data[offset + 1] << 8)
+    if value & 0x8000:
+        value -= 0x10000
+    return value
+
+
+def _read_i24_le(data: bytes, offset: int) -> int:
+    value = data[offset] | (data[offset + 1] << 8) | (data[offset + 2] << 16)
+    if value & 0x800000:
+        value -= 0x1000000
+    return value
+
+
+def _parse_frame(frame: bytes) -> str:
+    if len(frame) < 6:
+        return "帧太短"
+    if frame[0] != HEADER or frame[-1] != TAIL:
+        return "帧头或帧尾错误"
+
+    length = frame[1]
+    expect_len = 1 + 1 + length + 2 + 1
+    if len(frame) != expect_len:
+        return "帧长度不匹配"
+
+    data = frame[2:2 + length]
+    recv_crc = frame[2 + length] | (frame[3 + length] << 8)
+    calc_crc = _crc16(bytes([length]) + data)
+    if recv_crc != calc_crc:
+        return f"CRC错误 calc=0x{calc_crc:04X} recv=0x{recv_crc:04X}"
+
+    if len(data) < 1:
+        return "数据区为空"
+
+    func = data[0]
+    payload = data[1:]
+
+    if func == FUNC_ODOM_COUNTS and len(payload) >= 6:
+        left = _read_i24_le(payload, 0)
+        right = _read_i24_le(payload, 3)
+        return f"odom_counts left={left} right={right}"
+
+    if func == FUNC_ODOM_SPEED and len(payload) >= 6:
+        left = _read_i16_le(payload, 0) / 100.0
+        right = _read_i16_le(payload, 2) / 100.0
+        return f"odom_speed left={left:.2f}cm/s right={right:.2f}cm/s"
+
+    if func == FUNC_ODOM_DISTANCE and len(payload) >= 2:
+        dist_raw = _read_i16_le(payload, 0)
+        if dist_raw == -1:
+            return "ultrasonic distance=invalid"
+        return f"ultrasonic distance={dist_raw / 10.0:.1f}cm"
+
+    if func == FUNC_IMU_RPY and len(payload) >= 6:
+        roll = _read_i16_le(payload, 0) / 10.0
+        pitch = _read_i16_le(payload, 2) / 10.0
+        yaw = _read_i16_le(payload, 4) / 10.0
+        return f"imu_rpy roll={roll:.1f} pitch={pitch:.1f} yaw={yaw:.1f}"
+
+    return f"func=0x{func:02X} payload={_hex(payload)}"
+
+
 class SerialControlApp:
     def __init__(self, root: tk.Tk) -> None:
         self._root = root
@@ -64,6 +143,9 @@ class SerialControlApp:
         self._list_ports = list_ports
         self._ser = None
         self._repeat_job = None
+        self._reader_stop = threading.Event()
+        self._reader_thread = None
+        self._rx_buffer = bytearray()
 
         self.var_port = tk.StringVar(value="")
         self.var_baud = tk.StringVar(value="115200")
@@ -130,6 +212,11 @@ class SerialControlApp:
         ttk.Label(frm, text="状态").grid(row=row, column=0, sticky="w", pady=(10, 0))
         self.txt_log = tk.Text(frm, height=10, width=48)
         self.txt_log.grid(row=row, column=0, columnspan=3, sticky="nsew", pady=(6, 0))
+
+        row += 1
+        ttk.Label(frm, text="接收解析").grid(row=row, column=0, sticky="w", pady=(10, 0))
+        self.txt_rx = tk.Text(frm, height=10, width=48)
+        self.txt_rx.grid(row=row, column=0, columnspan=3, sticky="nsew", pady=(6, 0))
         frm.columnconfigure(1, weight=1)
         frm.rowconfigure(row, weight=1)
 
@@ -143,6 +230,10 @@ class SerialControlApp:
         self.txt_hex.insert("end", _hex(frame))
         self.txt_hex.configure(state="disabled")
 
+    def _log_rx(self, s: str) -> None:
+        self.txt_rx.insert("end", s + "\n")
+        self.txt_rx.see("end")
+
     def _refresh_ports(self) -> None:
         ports = [p.device for p in self._list_ports.comports()]
         self.cb_port["values"] = ports
@@ -154,6 +245,7 @@ class SerialControlApp:
     def _toggle_connect(self) -> None:
         if self._ser is not None:
             self._stop_repeat()
+            self._stop_reader()
             try:
                 self._ser.close()
             except Exception:
@@ -180,8 +272,57 @@ class SerialControlApp:
             self._ser = None
             return
 
+        self._start_reader()
         self.btn_connect.configure(text="关闭串口")
         self._log(f"串口已打开 {port} @ {baud}")
+
+    def _start_reader(self) -> None:
+        self._reader_stop.clear()
+        self._rx_buffer.clear()
+        self._reader_thread = threading.Thread(target=self._reader_loop, daemon=True)
+        self._reader_thread.start()
+
+    def _stop_reader(self) -> None:
+        self._reader_stop.set()
+        self._reader_thread = None
+
+    def _reader_loop(self) -> None:
+        while not self._reader_stop.is_set():
+            if self._ser is None:
+                return
+            try:
+                chunk = self._ser.read(64)
+            except Exception as e:
+                self._root.after(0, lambda: self._log_rx(f"接收失败: {e}"))
+                return
+            if not chunk:
+                continue
+            self._rx_buffer.extend(chunk)
+            self._consume_rx_buffer()
+
+    def _consume_rx_buffer(self) -> None:
+        while True:
+            start = self._rx_buffer.find(bytes([HEADER]))
+            if start < 0:
+                self._rx_buffer.clear()
+                return
+            if start > 0:
+                del self._rx_buffer[:start]
+
+            if len(self._rx_buffer) < 6:
+                return
+
+            data_len = self._rx_buffer[1]
+            frame_len = 1 + 1 + data_len + 2 + 1
+            if len(self._rx_buffer) < frame_len:
+                return
+
+            frame = bytes(self._rx_buffer[:frame_len])
+            del self._rx_buffer[:frame_len]
+
+            parsed = _parse_frame(frame)
+            frame_hex = _hex(frame)
+            self._root.after(0, lambda fh=frame_hex, ps=parsed: self._log_rx(f"{fh} | {ps}"))
 
     def _update_mode_labels(self) -> None:
         if self.var_mode.get() == "speed":

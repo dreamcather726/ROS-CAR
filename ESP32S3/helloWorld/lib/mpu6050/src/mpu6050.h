@@ -5,6 +5,7 @@
 // 可自行修改I2C地址
 #define MPU6050_ADDR    0x68
 #define rad2deg         57.29578f
+#define deg2rad         0.0174532925f
 #define I2C_SDA_PIN       8
 #define I2C_SCL_PIN       9
 // 原始数据 全局变量

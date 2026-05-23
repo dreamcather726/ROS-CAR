@@ -8,6 +8,7 @@ static int32_t g_speed_last_left = 0;// 上一次左轮速度计数
 static int32_t g_speed_last_right = 0;// 上一次右轮速度计数
 static uint32_t g_speed_last_us = 0;// 上一次速度采样时间（微秒）
 static bool g_speed_inited = false;// 速度计算是否初始化
+static bool g_irq_attached = false;
 // 四相编码器状态转换表
 static const int8_t g_quad_table[16] = {
     0, -1, 1, 0,
@@ -65,15 +66,18 @@ void wheel_encoder_init(bool enable_pullups)
   g_left_state = static_cast<uint8_t>((digitalRead(WHEEL_ENC_L_A_PIN) << 1) | digitalRead(WHEEL_ENC_L_B_PIN));
   g_right_state = static_cast<uint8_t>((digitalRead(WHEEL_ENC_R_A_PIN) << 1) | digitalRead(WHEEL_ENC_R_B_PIN));
 
-  detachInterrupt(digitalPinToInterrupt(WHEEL_ENC_L_A_PIN));
-  detachInterrupt(digitalPinToInterrupt(WHEEL_ENC_L_B_PIN));
-  detachInterrupt(digitalPinToInterrupt(WHEEL_ENC_R_A_PIN));
-  detachInterrupt(digitalPinToInterrupt(WHEEL_ENC_R_B_PIN));
+  if (g_irq_attached) {
+    detachInterrupt(digitalPinToInterrupt(WHEEL_ENC_L_A_PIN));
+    detachInterrupt(digitalPinToInterrupt(WHEEL_ENC_L_B_PIN));
+    detachInterrupt(digitalPinToInterrupt(WHEEL_ENC_R_A_PIN));
+    detachInterrupt(digitalPinToInterrupt(WHEEL_ENC_R_B_PIN));
+  }
 
   attachInterrupt(digitalPinToInterrupt(WHEEL_ENC_L_A_PIN), wheel_encoder_isr_left_a, CHANGE);
   attachInterrupt(digitalPinToInterrupt(WHEEL_ENC_L_B_PIN), wheel_encoder_isr_left_b, CHANGE);
   attachInterrupt(digitalPinToInterrupt(WHEEL_ENC_R_A_PIN), wheel_encoder_isr_right_a, CHANGE);
   attachInterrupt(digitalPinToInterrupt(WHEEL_ENC_R_B_PIN), wheel_encoder_isr_right_b, CHANGE);
+  g_irq_attached = true;
 }
 
 void wheel_encoder_speed_init()
@@ -83,55 +87,19 @@ void wheel_encoder_speed_init()
   g_speed_inited = true;
 }
 
-void wheel_encoder_get_speed_cm_s(float *left_cm_s, float *right_cm_s, uint32_t sample_us)
+bool wheel_encoder_get_speed_cm_s(float *left_cm_s, float *right_cm_s, uint32_t sample_us)
 {
   if (!g_speed_inited) {
     wheel_encoder_speed_init();
-    return;
+    return false;
   } 
 
   const uint32_t now_us = micros();
   const uint32_t dt_us = now_us - g_speed_last_us;
   if (dt_us == 0U) {
-    return;
+    return false;
   }
   if (dt_us < sample_us) {
-    return;
-  }
-
-  int32_t left = 0;
-  int32_t right = 0;
-  wheel_encoder_get_counts(&left, &right);
-
-  const int32_t dl = left - g_speed_last_left;
-  const int32_t dr = right - g_speed_last_right;
-  const float dt_s = static_cast<float>(dt_us) * 1e-6f;
-  const float v_left = wheel_encoder_delta_to_speed_cm_s(dl, dt_s);
-  const float v_right = wheel_encoder_delta_to_speed_cm_s(dr, dt_s);
-
-  if (left_cm_s) *left_cm_s = v_left;
-  if (right_cm_s) *right_cm_s = v_right;
-
-  g_speed_last_left = left;
-  g_speed_last_right = right;
-  g_speed_last_us = now_us;
-  return;
-}
-
-bool wheel_encoder_get_odom(int32_t *left_count,
-                            int32_t *right_count,
-                            float *left_cm_s,
-                            float *right_cm_s,
-                            uint32_t sample_us)
-{
-  if (!g_speed_inited) {
-    wheel_encoder_speed_init();
-    return false;
-  }
-
-  const uint32_t now_us = micros();
-  const uint32_t dt_us = now_us - g_speed_last_us;
-  if (dt_us == 0U || dt_us < sample_us) {
     return false;
   }
 
@@ -145,8 +113,6 @@ bool wheel_encoder_get_odom(int32_t *left_count,
   const float v_left = wheel_encoder_delta_to_speed_cm_s(dl, dt_s);
   const float v_right = wheel_encoder_delta_to_speed_cm_s(dr, dt_s);
 
-  if (left_count) *left_count = left;
-  if (right_count) *right_count = right;
   if (left_cm_s) *left_cm_s = v_left;
   if (right_cm_s) *right_cm_s = v_right;
 

@@ -1,50 +1,69 @@
 #include "ultrasonic.h"
+#include "timer.h"
+#include <math.h>
+
+// 宏定义统一管理（避免魔术数字）
+#define TRIGGER_PULL_LOW_US    5      // 标准时序：触发前拉低5us
+#define TRIGGER_HIGH_US        10     // 触发信号10us
+#define SOUND_SPEED_CM_PER_US  0.034f
+#define MAX_DISTANCE_CM        400.0f
+#define DEFAULT_INVALID_VALUE  -1
+
+// 滤波：采样次数
+#define FILTER_SAMPLE_COUNT    5
 
 void ultrasonic_init() {
+    // 先置低 → 再初始化，防止误触发
+    digitalWrite(TRIG_PIN, LOW);
     pinMode(TRIG_PIN, OUTPUT);
     pinMode(ECHO_PIN, INPUT);
-    digitalWrite(TRIG_PIN, LOW);
 }
 
-float ultrasonic_get_distance() {
-    // 发触发信号
+// 单次读取（内部函数）
+static float ultrasonic_get_single(void) {
     digitalWrite(TRIG_PIN, LOW);
-    delayMicroseconds(2);
+    simple_timer_wait_us(TRIGGER_PULL_LOW_US);
+    
     digitalWrite(TRIG_PIN, HIGH);
-    delayMicroseconds(10);
+    simple_timer_wait_us(TRIGGER_HIGH_US);
     digitalWrite(TRIG_PIN, LOW);
 
-    long duration = pulseIn(ECHO_PIN, HIGH, ULTRASONIC_TIMEOUT_US);
+    const long timeout = (long)(MAX_DISTANCE_CM * 2 / SOUND_SPEED_CM_PER_US);
+    long duration = pulseIn(ECHO_PIN, HIGH, timeout);
 
-    // 算距离：声速 340m/s，往返除以2
-    float distance = (duration * 0.034) / 2.0;
+    if (duration <= 0) {
+        return DEFAULT_INVALID_VALUE;
+    }
 
-    // 超出范围或无信号返回 -1
-    if (distance == 0 || distance > 400) {
-        return -1;
+    float distance = (duration * SOUND_SPEED_CM_PER_US) / 2.0f;
+
+    if (distance <= 0.0f || distance > MAX_DISTANCE_CM) {
+        return DEFAULT_INVALID_VALUE;
     }
 
     return distance;
 }
-    
-static inline void write_i16_le(uint8_t *out, int16_t v)
-{
-    out[0] = static_cast<uint8_t>(v & 0xFF);
-    out[1] = static_cast<uint8_t>((v >> 8) & 0xFF);
-}
 
-void ultrasonic_pack_distance_cm_x10(float distance_cm, uint8_t out6[6])
-{
-    int32_t dv = -1;
-    if (distance_cm >= 0.0f) {
-        dv = static_cast<int32_t>(distance_cm * 10.0f);
-        if (dv > 32767) dv = 32767;
-        if (dv < -32768) dv = -32768;
+// 多次采样取平均（无异常值剔除）
+float ultrasonic_get_distance(void) {
+    float sum = 0.0f;
+    uint8_t count = 0;
+
+    // 连续采样 N 次，累加有效数据
+    for (int i = 0; i < FILTER_SAMPLE_COUNT; i++) {
+        float d = ultrasonic_get_single();
+        if (d >= 0.0f) {  // 只统计有效距离
+            sum += d;
+            count++;
+        }
+        simple_timer_wait_us(300); // 防止采样过快
     }
 
-    out6[2] = 0;
-    out6[3] = 0;
-    out6[4] = 0;
-    out6[5] = 0;
-    write_i16_le(&out6[0], static_cast<int16_t>(dv));
+    // 无有效数据
+    if (count == 0) {
+        return DEFAULT_INVALID_VALUE;
+    }
+
+    // 返回平均值
+    return sum / count;
 }

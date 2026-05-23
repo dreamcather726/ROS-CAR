@@ -15,23 +15,14 @@ class SerialSensorNode(Node):
     def __init__(self, *, start_serial: Optional[bool] = None):
         super().__init__('serial_node')
 
-        self.declare_parameter('port', '/dev/ttyUSB0')# 串口端口
-        self.declare_parameter('baudrate', 115200)# 串口波特率
-        self.declare_parameter('topic_ns', '/car')# 主题命名空间
-        self.declare_parameter('wheel_base_m', 0.0)# 轮距
-        self.declare_parameter('rx_timeout_s', 2.0)# 接收超时时间
-        self.declare_parameter('reconnect_interval_s', 1.0)# 重新连接间隔
-        self.declare_parameter('warn_interval_s', 2.0)# 警告间隔
-        self.declare_parameter('enable_serial', True)   # 是否启用串口通信
-
-        self.port = str(self.get_parameter('port').value)
-        self.baudrate = int(self.get_parameter('baudrate').value)
-        self.topic_ns = str(self.get_parameter('topic_ns').value).rstrip('/')
-        self.wheel_base_m = float(self.get_parameter('wheel_base_m').value)
-        self.rx_timeout_s = float(self.get_parameter('rx_timeout_s').value)
-        self.reconnect_interval_s = float(self.get_parameter('reconnect_interval_s').value)
-        self.warn_interval_s = float(self.get_parameter('warn_interval_s').value)
-        self.enable_serial = bool(self.get_parameter('enable_serial').value)
+        self.port = '/dev/ttyUSB0'
+        self.baudrate = 115200
+        self.topic_ns = '/car'
+        self.wheel_base_m = 0.0
+        self.rx_timeout_s = 2.0
+        self.reconnect_interval_s = 1.0
+        self.warn_interval_s = 2.0
+        self.enable_serial = True
         if start_serial is not None:
             self.enable_serial = bool(start_serial)
 
@@ -76,7 +67,7 @@ class SerialSensorNode(Node):
 
         self.create_timer(0.2, self._watchdog_tick)
         self.get_logger().info(
-            f"✅ serial_node 已启动 | port={self.port} baud={self.baudrate} ns={self.topic_ns}"
+            f"serial_node begin | port={self.port} baud={self.baudrate} ns={self.topic_ns}"
         )
         self.sub_tx = self.create_subscription(
             UInt8MultiArray, '/serial/tx_frame', self.on_tx_frame, 10
@@ -112,11 +103,11 @@ class SerialSensorNode(Node):
             self._rx_buf.clear()
             self._last_rx_monotonic = time.monotonic()
             self._connected_port = port
-            self.get_logger().info(f"✅ 串口打开成功：{port}")
+            self.get_logger().info(f"✅ serial_node open serial port={self.port} baud={self.baudrate} ns={self.topic_ns} | {port}")
         except Exception as e:
             self._ser = None
             self._connected_port = None
-            self._warn_throttled(f"❌ 串口打开失败：{str(e)}")
+            self._warn_throttled(f"❌ serial_node open serial port={self.port} baud={self.baudrate} ns={self.topic_ns} | {str(e)}")
 
     def _close_serial(self):
         try:
@@ -206,9 +197,9 @@ class SerialSensorNode(Node):
             return
 
         if func == self._FUNC_IMU_RPY:
-            roll_deg = self._read_i16_le(payload, 0) / 100.0
-            pitch_deg = self._read_i16_le(payload, 2) / 100.0
-            yaw_deg = self._read_i16_le(payload, 4) / 100.0
+            roll_deg = self._read_i16_le(payload, 0) / 10.0
+            pitch_deg = self._read_i16_le(payload, 2) / 10.0
+            yaw_deg = self._read_i16_le(payload, 4) / 10.0
             self._last_rpy_deg = (roll_deg, pitch_deg, yaw_deg)
             msg = Vector3Stamped()
             msg.header.stamp = now

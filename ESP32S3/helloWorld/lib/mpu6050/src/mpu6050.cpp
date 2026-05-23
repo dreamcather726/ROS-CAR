@@ -114,9 +114,11 @@ void mpu6050_calibrate(void)
 // 更新：读原始数据 + 卡尔曼解算角度
   void mpu6050_update(void)
 {
-    float dt = (millis() - _lasttime) / 1000.0f;
-    _lasttime = millis();
-    if (dt <= 0.0f || dt > 0.2f) dt = 0.0f;
+    const uint32_t now_ms = millis();
+    float dt = static_cast<float>(now_ms - _lasttime) / 1000.0f;
+    _lasttime = now_ms;
+    if (dt <= 0.0f) dt = 0.0f;
+    if (dt > 0.2f) dt = 0.02f;
 
       mpu6050_read_raw();
 
@@ -130,18 +132,25 @@ void mpu6050_calibrate(void)
     float gzf = (gz - gz_offset) / 131.0f;
 
     if (dt > 0.0f) {
-        const bool is_still = (fabsf(axf) < 0.05f) && (fabsf(ayf) < 0.05f) && (fabsf(azf - 1.0f) < 0.05f) &&
-                              (fabsf(gxf) < 0.6f) && (fabsf(gyf) < 0.6f) && (fabsf(gzf) < 0.6f);
+        const float amag = sqrtf(axf * axf + ayf * ayf + azf * azf);
+        const bool accel_still = fabsf(amag - 1.0f) < 0.12f;
+        const bool gyro_still = (fabsf(gxf) < 1.2f) && (fabsf(gyf) < 1.2f) && (fabsf(gzf) < 1.2f);
+        const bool is_still = accel_still && gyro_still;
         if (is_still) {
-            constexpr float alpha = 0.01f;
+            constexpr float alpha = 0.02f;
             gz_bias_dps = (1.0f - alpha) * gz_bias_dps + alpha * gzf;
         }
         gzf -= gz_bias_dps;
     }
 
-    // 陀螺仪姿态积分
-    float roll_v  = gxf + (sin(pitch)*sin(roll)/cos(pitch))*gyf + (sin(pitch)*cos(roll)/cos(pitch))*gzf;
-    float pitch_v = cos(roll)*gyf - sin(roll)*gzf;
+    const float roll_rad = roll * deg2rad;
+    const float pitch_rad = pitch * deg2rad;
+    float cos_pitch = cosf(pitch_rad);
+    if (fabsf(cos_pitch) < 1e-4f) cos_pitch = (cos_pitch >= 0.0f) ? 1e-4f : -1e-4f;
+
+    float roll_v  = gxf + (sinf(pitch_rad) * sinf(roll_rad) / cos_pitch) * gyf +
+                    (sinf(pitch_rad) * cosf(roll_rad) / cos_pitch) * gzf;
+    float pitch_v = cosf(roll_rad) * gyf - sinf(roll_rad) * gzf;
 
     gyro_roll  = roll + dt * roll_v;
     gyro_pitch = pitch + dt * pitch_v;
@@ -153,9 +162,8 @@ void mpu6050_calibrate(void)
     float k0 = e_P[0][0] / (e_P[0][0] + 0.3f);
     float k1 = e_P[1][1] / (e_P[1][1] + 0.3f);
 
-    // 加速度计观测角度
-    acc_roll  = atan(ayf / azf) * rad2deg;
-    acc_pitch = -atan(axf / sqrt(ayf*ayf + azf*azf)) * rad2deg;
+    acc_roll  = atan2f(ayf, azf) * rad2deg;
+    acc_pitch = -atan2f(axf, sqrtf(ayf * ayf + azf * azf)) * rad2deg;
 
     // 卡尔曼融合
     roll  = gyro_roll  + k0 * (acc_roll - gyro_roll);
@@ -203,9 +211,9 @@ void mpu6050_pack_gyro_dps_x10(float gyro_x_dps, float gyro_y_dps, float gyro_z_
 }
 void mpu6050_pack_roll_pitch_yaw_degrees(float roll_deg, float pitch_deg, float yaw_deg, uint8_t out6[6])
 {
-    const int16_t rx_out = clamp_i16(static_cast<int32_t>(roll_deg * 100.0f));
-    const int16_t ry_out = clamp_i16(static_cast<int32_t>(pitch_deg * 100.0f));
-    const int16_t rz_out = clamp_i16(static_cast<int32_t>(yaw_deg * 100.0f));
+    const int16_t rx_out = clamp_i16(static_cast<int32_t>(lroundf(roll_deg * 10.0f)));
+    const int16_t ry_out = clamp_i16(static_cast<int32_t>(lroundf(pitch_deg * 10.0f)));
+    const int16_t rz_out = clamp_i16(static_cast<int32_t>(lroundf(yaw_deg * 10.0f)));
     write_i16_le(&out6[0], rx_out);
     write_i16_le(&out6[2], ry_out);
     write_i16_le(&out6[4], rz_out);

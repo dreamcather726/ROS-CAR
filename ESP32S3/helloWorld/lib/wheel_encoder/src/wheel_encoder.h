@@ -30,19 +30,15 @@ inline float wheel_encoder_delta_to_speed_cm_s(int32_t delta_counts, float dt_s)
 // 速度计算初始化（通常在 wheel_encoder_init 后调用一次）
 void wheel_encoder_speed_init();
 
-// 按固定采样周期计算速度，达到周期返回 true，否则返回 false
-void wheel_encoder_get_speed_cm_s(float *left_cm_s, float *right_cm_s, uint32_t sample_us = 100000U);
-
-bool wheel_encoder_get_odom(int32_t *left_count,
-                            int32_t *right_count,
-                            float *left_cm_s,
-                            float *right_cm_s,
-                            uint32_t sample_us = 100000U);
+// 只计算左右轮速度，达到采样周期返回 true，否则返回 false
+bool wheel_encoder_get_speed_cm_s(float *left_cm_s,
+                                  float *right_cm_s,
+                                  uint32_t sample_us = 100000U);
 
 // 初始化编码器计数（enable_pullups=true 时使用内部上拉）
 void wheel_encoder_init(bool enable_pullups = true);
 
-// 读取左右轮累计计数（有符号，正负代表方向）
+// 只读取左右轮累计总计数（有符号，正负代表方向）
 void wheel_encoder_get_counts(int32_t *left, int32_t *right);
 int32_t wheel_encoder_get_left();
 int32_t wheel_encoder_get_right();

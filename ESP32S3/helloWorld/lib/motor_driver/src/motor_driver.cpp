@@ -1,8 +1,6 @@
 #include <Arduino.h>
 #include "motor_driver.h"
 
-
-
 void motor_init()
 {
   pinMode(MOTOR_DIRA_PIN, OUTPUT);

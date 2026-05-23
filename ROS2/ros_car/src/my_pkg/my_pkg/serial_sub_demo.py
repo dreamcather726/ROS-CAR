@@ -26,7 +26,7 @@ class SerialSubDemo(Node):
 
         self.create_timer(1.0, self._print_tick)
 
-        self.get_logger().info(f'✅ serial_sub_demo 已启动 | topic_ns={topic_ns}')
+        self.get_logger().info(f'✅ serial_sub_demo begin | topic_ns={topic_ns}')
 
     def on_wheel_speed(self, msg: Vector3Stamped):
         self._wheel_speed = msg
@@ -61,7 +61,7 @@ class SerialSubDemo(Node):
 
         if self._rpy:
             parts.append(
-                f'rpy_deg roll={self._rpy.vector.x:.2f} pitch={self._rpy.vector.y:.2f} yaw={self._rpy.vector.z:.2f}'
+                f'rpy_deg roll={self._rpy.vector.x:.1f} pitch={self._rpy.vector.y:.1f} yaw={self._rpy.vector.z:.1f}'
             )
 
         if self._status and self._status.status:
