@@ -1,17 +1,12 @@
 #include "serial_receive.h"
 
-static uint8_t g_rx_frame[SERIAL_RECEIVE_FRAME_SIZE];
-static size_t g_rx_pos = 0;
+static uint8_t g_rx_frame[SERIAL_RECEIVE_MAX_FRAME_SIZE];
+static uint8_t g_rx_pos = 0;
+static uint8_t g_expect_len = 0;
+static uint8_t g_data_len = 0;
 
-static bool g_has_speed = false;
-static float g_speed_left_cm_s = 0.0f;
-static float g_speed_right_cm_s = 0.0f;
-static uint32_t g_speed_rx_ms = 0;
-
-static bool g_has_target_counts = false;
-static int32_t g_target_left_counts = 0;
-static int32_t g_target_right_counts = 0;
-static uint32_t g_target_counts_rx_ms = 0;
+static bool g_has_frame = false;
+static SerialReceiveFrame g_last_frame = {0, 0, {0}, 0};
 
 static uint32_t g_last_rx_ms = 0;
 static SerialReceiveStats g_stats = {0, 0, 0, 0};
@@ -28,39 +23,31 @@ static void dbg_hex2(uint8_t v)
   g_debug->print(v, HEX);
 }
 
-static void dbg_print_frame10(const uint8_t frame[SERIAL_RECEIVE_FRAME_SIZE])
+static void dbg_print_frame(const uint8_t frame[], uint8_t len)
 {
   if (!g_debug || !g_debug_print_frames) return;
   g_debug->print("rx frame: ");
-  for (size_t i = 0; i < SERIAL_RECEIVE_FRAME_SIZE; i++) {
+  for (uint8_t i = 0; i < len; i++) {
     dbg_hex2(frame[i]);
-    if (i + 1 < SERIAL_RECEIVE_FRAME_SIZE) g_debug->print(' ');
+    if (i + 1 < len) g_debug->print(' ');
   }
   g_debug->println();
 }
 
-static uint8_t checksum8(const uint8_t *bytes, size_t len)
+static uint16_t crc16_modbus(const uint8_t bytes[], size_t len)
 {
-  uint8_t sum = 0;
+  uint16_t crc = 0xFFFF;
   for (size_t i = 0; i < len; i++) {
-    sum = static_cast<uint8_t>(sum + bytes[i]);
+    crc ^= bytes[i];
+    for (uint8_t bit = 0; bit < 8; bit++) {
+      if ((crc & 0x0001) != 0) {
+        crc = static_cast<uint16_t>((crc >> 1) ^ 0xA001);
+      } else {
+        crc = static_cast<uint16_t>(crc >> 1);
+      }
+    }
   }
-  return sum;
-}
-
-static int16_t read_i16_le(const uint8_t *p)
-{
-  return static_cast<int16_t>(static_cast<uint16_t>(p[0]) | (static_cast<uint16_t>(p[1]) << 8));
-}
-
-static int32_t read_i24_le(const uint8_t *p)
-{
-  int32_t v = static_cast<int32_t>(p[0]) | (static_cast<int32_t>(p[1]) << 8) |
-              (static_cast<int32_t>(p[2]) << 16);
-  if (v & 0x800000) {
-    v |= static_cast<int32_t>(0xFF000000);
-  }
-  return v;
+  return crc;
 }
 
 /**
@@ -70,15 +57,11 @@ static int32_t read_i24_le(const uint8_t *p)
 void serial_receive_reset()
 {
   g_rx_pos = 0;
-  g_has_speed = false;
-  g_speed_left_cm_s = 0.0f;
-  g_speed_right_cm_s = 0.0f;
-  g_speed_rx_ms = 0;
+  g_expect_len = 0;
+  g_data_len = 0;
 
-  g_has_target_counts = false;
-  g_target_left_counts = 0;
-  g_target_right_counts = 0;
-  g_target_counts_rx_ms = 0;
+  g_has_frame = false;
+  g_last_frame = {0, 0, {0}, 0};
 
   g_last_rx_ms = 0;
   g_stats = {0, 0, 0, 0};
@@ -96,52 +79,17 @@ void serial_receive_set_debug_flags(bool print_bytes, bool print_frames, bool pr
   g_debug_print_errors = print_errors;
 }
 
-
-static void on_frame(uint8_t func, const uint8_t payload[SERIAL_RECEIVE_DATA_SIZE])
+static void on_frame(uint8_t func, const uint8_t payload[], uint8_t payload_len)
 {
   const uint32_t now_ms = millis();
   g_last_rx_ms = now_ms;
-
-  if (func == SERIAL_RECEIVE_FUNC_WHEEL_SPEED) {
-    const int16_t l = read_i16_le(&payload[0]);
-    const int16_t r = read_i16_le(&payload[2]);
-    g_speed_left_cm_s = static_cast<float>(l) / 100.0f;
-    g_speed_right_cm_s = static_cast<float>(r) / 100.0f;
-    g_speed_rx_ms = now_ms;
-    g_has_speed = true;
-    if (g_debug && g_debug_print_frames) {
-      g_debug->print("rx ok func=0x");
-      dbg_hex2(func);
-      g_debug->print(" speed_cm_s left=");
-      g_debug->print(g_speed_left_cm_s, 2);
-      g_debug->print(" right=");
-      g_debug->println(g_speed_right_cm_s, 2);
-    }
-    return;
+  g_last_frame.func = func;
+  g_last_frame.payload_len = payload_len;
+  for (uint8_t i = 0; i < payload_len; i++) {
+    g_last_frame.payload[i] = payload[i];
   }
-
-  if (func == SERIAL_RECEIVE_FUNC_WHEEL_TARGET_COUNTS) {
-    g_target_left_counts = read_i24_le(&payload[0]);
-    g_target_right_counts = read_i24_le(&payload[3]);
-    g_target_counts_rx_ms = now_ms;
-    g_has_target_counts = true;
-    if (g_debug && g_debug_print_frames) {
-      g_debug->print("rx ok func=0x");
-      dbg_hex2(func);
-      g_debug->print(" target_counts left=");
-      g_debug->print(g_target_left_counts);
-      g_debug->print(" right=");
-      g_debug->println(g_target_right_counts);
-    }
-    return;
-  }
-
-  g_stats.unknown_func++;
-  if (g_debug && g_debug_print_errors) {
-    g_debug->print("rx unknown func=0x");
-    dbg_hex2(func);
-    g_debug->println();
-  }
+  g_last_frame.rx_ms = now_ms;
+  g_has_frame = true;
 }
 
 /**
@@ -170,76 +118,89 @@ void serial_receive_update(Stream &serial)
       }
       g_rx_frame[0] = ub;
       g_rx_pos = 1;
-      continue;
-    }
-
-    if (ub == SERIAL_RECEIVE_HEADER) {
-      g_rx_frame[0] = ub;
-      g_rx_pos = 1;
+      g_expect_len = 0;
+      g_data_len = 0;
       continue;
     }
 
     g_rx_frame[g_rx_pos++] = ub;
-    if (g_rx_pos < SERIAL_RECEIVE_FRAME_SIZE) {
+    if (g_rx_pos == 2) {
+      g_data_len = g_rx_frame[1];
+      if (g_data_len < 1 || g_data_len > SERIAL_RECEIVE_MAX_DATA_SIZE) {
+        g_stats.unknown_func++;
+        g_rx_pos = 0;
+        continue;
+      }
+      g_expect_len = static_cast<uint8_t>(1 + 1 + g_data_len + 2 + 1);
+    }
+
+    if (g_expect_len == 0 || g_rx_pos < g_expect_len) {
       continue;
     }
 
-    g_rx_pos = 0;
+    dbg_print_frame(g_rx_frame, g_expect_len);
 
-    dbg_print_frame10(g_rx_frame);
-
-    if (g_rx_frame[SERIAL_RECEIVE_FRAME_SIZE - 1] != SERIAL_RECEIVE_TAIL) {
+    const uint8_t tail = g_rx_frame[g_expect_len - 1];
+    if (tail != SERIAL_RECEIVE_TAIL) {
       g_stats.bad_tail++;
       if (g_debug && g_debug_print_errors) {
         g_debug->print("rx bad tail got 0x");
-        dbg_hex2(g_rx_frame[SERIAL_RECEIVE_FRAME_SIZE - 1]);
+        dbg_hex2(tail);
         g_debug->println();
       }
+      g_rx_pos = 0;
+      g_expect_len = 0;
+      g_data_len = 0;
       continue;
     }
 
-    const uint8_t calc = checksum8(g_rx_frame, 8);
-    const uint8_t recv = g_rx_frame[8];
-    if (calc != recv) {
+    const uint8_t *data = &g_rx_frame[2];
+    const uint16_t recv_crc = static_cast<uint16_t>(g_rx_frame[2 + g_data_len]) |
+                              (static_cast<uint16_t>(g_rx_frame[3 + g_data_len]) << 8);
+    uint8_t crc_input[1 + SERIAL_RECEIVE_MAX_DATA_SIZE];
+    crc_input[0] = g_data_len;
+    for (uint8_t i = 0; i < g_data_len; i++) {
+      crc_input[1 + i] = data[i];
+    }
+    const uint16_t calc_crc = crc16_modbus(crc_input, 1 + g_data_len);
+    if (calc_crc != recv_crc) {
       g_stats.checksum_fail++;
       if (g_debug && g_debug_print_errors) {
-        g_debug->print("rx checksum fail calc=0x");
-        dbg_hex2(calc);
+        g_debug->print("rx crc fail calc=0x");
+        dbg_hex2(static_cast<uint8_t>(calc_crc & 0xFF));
+        dbg_hex2(static_cast<uint8_t>((calc_crc >> 8) & 0xFF));
         g_debug->print(" recv=0x");
-        dbg_hex2(recv);
+        dbg_hex2(static_cast<uint8_t>(recv_crc & 0xFF));
+        dbg_hex2(static_cast<uint8_t>((recv_crc >> 8) & 0xFF));
         g_debug->println();
       }
+      g_rx_pos = 0;
+      g_expect_len = 0;
+      g_data_len = 0;
       continue;
     }
 
     g_stats.frames_ok++;
-    on_frame(g_rx_frame[1], &g_rx_frame[2]);
+    const uint8_t func = data[0];
+    const uint8_t payload_len = static_cast<uint8_t>(g_data_len - 1);
+    on_frame(func, &data[1], payload_len);
+
+    g_rx_pos = 0;
+    g_expect_len = 0;
+    g_data_len = 0;
   }
 }
 
-bool serial_receive_take_wheel_speed_cm_s(float *left_cm_s, float *right_cm_s, uint32_t *rx_ms)
+bool serial_receive_take_frame(SerialReceiveFrame *out)
 {
-  if (!g_has_speed) {
+  if (!out) {
     return false;
   }
-  if (left_cm_s) *left_cm_s = g_speed_left_cm_s;
-  if (right_cm_s) *right_cm_s = g_speed_right_cm_s;
-  if (rx_ms) *rx_ms = g_speed_rx_ms;
-  g_has_speed = false;
-  return true;
-}
-
-bool serial_receive_take_wheel_target_counts(int32_t *left_counts,
-                                            int32_t *right_counts,
-                                            uint32_t *rx_ms)
-{
-  if (!g_has_target_counts) {
+  if (!g_has_frame) {
     return false;
   }
-  if (left_counts) *left_counts = g_target_left_counts;
-  if (right_counts) *right_counts = g_target_right_counts;
-  if (rx_ms) *rx_ms = g_target_counts_rx_ms;
-  g_has_target_counts = false;
+  *out = g_last_frame;
+  g_has_frame = false;
   return true;
 }
 

@@ -4,7 +4,7 @@
 #include "speed_pid.h"
 #include "serial_sender.h"
 #include <Ticker.h>
-#include "mpu6050.h"
+#include "imu.h"
 
 // 串口发送功能码：编码器总计数
 static constexpr uint8_t FRAME_FUNC_ENCODER = 0x01;
@@ -51,11 +51,11 @@ void setup()
   wheel_encoder_init();
   wheel_encoder_speed_init();
   motor_init();
-  if (!mpu6050_init()) {
-    Serial.println("MPU6050 INIT FAIL");
-    while (1);
+  if(!mpu6050_init()) {
+    Serial.println("MPU6050 初始化失败");
+    while(true);
   }
-  mpu6050_calibrate();//校准MPU6050
+  mpu6050_calibrate();
   // PID 参数初始化
   pidL = {};
   pidR = {};

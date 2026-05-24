@@ -7,10 +7,9 @@ static inline int16_t ss_clamp_i16(int32_t v) {
   return static_cast<int16_t>(v);
 }
 
-static inline float ss_wrap_deg_180(float deg) {
+static inline float ss_wrap_deg_360(float deg) {
   float x = fmodf(deg, 360.0f);
-  if (x >= 180.0f) x -= 360.0f;
-  if (x < -180.0f) x += 360.0f;
+  if (x < 0.0f) x += 360.0f;
   return x;
 }
 
@@ -69,9 +68,9 @@ void ss_pack_rpy_deg_x10_i16_le(float roll_deg,
                                 uint8_t out6[6]) {
   if (out6 == nullptr) return;
 
-  const float r_deg = ss_wrap_deg_180(roll_deg);
-  const float p_deg = ss_wrap_deg_180(pitch_deg);
-  const float y_deg = ss_wrap_deg_180(yaw_deg);
+  const float r_deg = roll_deg;
+  const float p_deg = pitch_deg;
+  const float y_deg = ss_wrap_deg_360(yaw_deg);
 
   const int16_t r = ss_clamp_i16(static_cast<int32_t>(lroundf(r_deg * 10.0f)));
   const int16_t p = ss_clamp_i16(static_cast<int32_t>(lroundf(p_deg * 10.0f)));

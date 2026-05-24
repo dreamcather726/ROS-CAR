@@ -4,10 +4,10 @@
 #include <motor_driver.h>
 
 // 默认编码器引脚（A相接中断，B相用于判断方向）
-static constexpr uint8_t WHEEL_ENC_L_A_PIN = 17;// 左轮编码器A引脚
-static constexpr uint8_t WHEEL_ENC_L_B_PIN = 18;// 左轮编码器B引脚
-static constexpr uint8_t WHEEL_ENC_R_A_PIN = 3;// 右轮编码器A引脚
-static constexpr uint8_t WHEEL_ENC_R_B_PIN = 46;// 右轮编码器B引脚
+static constexpr uint8_t WHEEL_ENC_L_A_PIN = 6;// 左轮编码器A引脚
+static constexpr uint8_t WHEEL_ENC_L_B_PIN = 7;// 左轮编码器B引脚
+static constexpr uint8_t WHEEL_ENC_R_A_PIN = 42;// 右轮编码器A引脚
+static constexpr uint8_t WHEEL_ENC_R_B_PIN = 41;// 右轮编码器B引脚
 
 static constexpr int8_t WHEEL_ENC_L_SIGN = MOTOR_A_INVERT_DIR ? 1 : -1;// 左轮方向修正：1=不变，-1=取反
 static constexpr int8_t WHEEL_ENC_R_SIGN = MOTOR_B_INVERT_DIR ? 1 : -1;// 右轮方向修正：1=不变，-1=取反

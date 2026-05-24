@@ -121,6 +121,9 @@ def _parse_frame(frame: bytes) -> str:
         roll = _read_i16_le(payload, 12) / 10.0
         pitch = _read_i16_le(payload, 14) / 10.0
         yaw = _read_i16_le(payload, 16) / 10.0
+        yaw = yaw % 360.0
+        if yaw < 0.0:
+            yaw += 360.0
         return f"imu raw=({ax},{ay},{az},{gx},{gy},{gz}) rpy=({roll:.1f},{pitch:.1f},{yaw:.1f})"
 
     return f"func=0x{func:02X} payload={_hex(payload)}"
