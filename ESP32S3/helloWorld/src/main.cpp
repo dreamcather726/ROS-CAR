@@ -11,6 +11,10 @@
 static constexpr uint8_t FRAME_FUNC_ENCODER = 0x01;
 static constexpr uint8_t FRAME_FUNC_IMU = 0x02;
 
+static constexpr uint8_t CMD_FUNC_WHEEL_SPEED = 0x10;
+
+static int16_t read_i16_le(const uint8_t *p);// 读取 16 位有符号整数，小端序
+
 // 是否每秒打印一次调试信息
 static constexpr bool DEBUG_SENSOR_PRINT = false;
 
@@ -73,6 +77,15 @@ void setup()
 void loop()
 {
   serial_receive_update(Serial);
+  SerialReceiveFrame rx;
+  if (serial_receive_take_frame(&rx)) {
+    if (rx.func == CMD_FUNC_WHEEL_SPEED && rx.payload_len >= 4) {
+      const int16_t l = read_i16_le(&rx.payload[0]);
+      const int16_t r = read_i16_le(&rx.payload[2]);
+      target_left_cm_s = static_cast<float>(l) / 100.0f;
+      target_right_cm_s = static_cast<float>(r) / 100.0f;
+    } 
+  }
 
   // 2) 每 50ms 执行一次：PID
   if (due_50ms) {
@@ -92,9 +105,6 @@ void loop()
     latest_left_cm_s = left_cm_s;
     latest_right_cm_s = right_cm_s;
 
-    // 目标为 0 时清一次 PID 累积，避免停止后再次启动抖动
-    if (target_left_cm_s == 0) PID_Clear(&pidL);
-    if (target_right_cm_s == 0) PID_Clear(&pidR);
 
     // PID 计算并输出到电机
     float pwmL_float = PID_IncPIDCal(&pidL, left_cm_s, target_left_cm_s);
@@ -110,13 +120,13 @@ void loop()
   // 3) 每 100ms 执行一次：发送传感器数据
   if (due_100ms) {
     due_100ms = false;
-    // uint8_t enc_payload[6];
-    // uint8_t imu_payload[18];
-    // ss_pack_int_le(latest_left_count, 3, &enc_payload[0]);//打包左轮总计数
-    // ss_pack_int_le(latest_right_count, 3, &enc_payload[3]);//打包右轮总计数
-    // ss_pack_mpu6050_bundle(ax,ay,az,gx,gy,gz,roll,pitch,yaw,imu_payload);//打包IMU数据帧
-    // ss_send(Serial, FRAME_FUNC_ENCODER, enc_payload, 6, false);//发送编码器总计数
-    // ss_send(Serial, FRAME_FUNC_IMU, imu_payload, 18, false);//发送IMU数据帧
+    uint8_t enc_payload[6];
+    uint8_t imu_payload[18];
+    ss_pack_int_le(latest_left_count, 3, &enc_payload[0]);//打包左轮总计数
+    ss_pack_int_le(latest_right_count, 3, &enc_payload[3]);//打包右轮总计数
+    ss_pack_mpu6050_bundle(ax,ay,az,gx,gy,gz,roll,pitch,yaw,imu_payload);//打包IMU数据帧
+    ss_send(Serial, FRAME_FUNC_ENCODER, enc_payload, 6, false);//发送编码器总计数
+    ss_send(Serial, FRAME_FUNC_IMU, imu_payload, 18, false);//发送IMU数据帧
   }
 
 
@@ -172,3 +182,9 @@ static void on_tick_10ms()
     due_1s = true;
   }
 }
+
+static int16_t read_i16_le(const uint8_t *p)
+{
+  return static_cast<int16_t>(static_cast<uint16_t>(p[0]) | (static_cast<uint16_t>(p[1]) << 8));
+}
+

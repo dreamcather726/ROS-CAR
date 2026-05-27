@@ -13,6 +13,3 @@ static constexpr bool MOTOR_B_INVERT_DIR = true;
 void motor_init();
 void motorA_set(int speed);
 void motorB_set(int speed);
-void motorA_stop();
-void motorB_stop();
-void motor_stop();

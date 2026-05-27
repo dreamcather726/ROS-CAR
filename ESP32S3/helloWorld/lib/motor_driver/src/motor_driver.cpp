@@ -22,7 +22,7 @@ void motorA_set(int speed)
   digitalWrite(MOTOR_DIRA_PIN, forward ? HIGH : LOW);
 
   analogWrite(MOTOR_PWMA_PIN, abs(speed));
-  delay(1);
+
 }
 
 void motorB_set(int speed)
@@ -31,23 +31,6 @@ void motorB_set(int speed)
   bool forward = (speed >= 0);
   if (MOTOR_B_INVERT_DIR) forward = !forward;
   digitalWrite(MOTOR_DIRB_PIN, forward ? HIGH : LOW);
- 
   analogWrite(MOTOR_PWMB_PIN, abs(speed));
-  delay(1);
 }
 
-void motorA_stop()
-{
-  analogWrite(MOTOR_PWMA_PIN, 0);
-}
-
-void motorB_stop()
-{
-  analogWrite(MOTOR_PWMB_PIN, 0);
-}
-
-void motor_stop()
-{
-  motorA_stop();
-  motorB_stop();
-}

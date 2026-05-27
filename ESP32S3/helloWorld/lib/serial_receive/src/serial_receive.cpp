@@ -54,9 +54,9 @@ static bool rx_try_finish_frame()
   // 校验尾部
   const uint8_t tail = g_rx_frame[g_expect_len - 1];
   if (tail != SERIAL_RECEIVE_TAIL) {
-    Serial.print("bad tail: 0x");
+    // Serial.print("bad tail: 0x");/
     if (tail < 16) Serial.print('0');
-    Serial.println(tail, HEX);
+    // Serial.println(tail, HEX);
     rx_reset_state();
     return true;
   }
