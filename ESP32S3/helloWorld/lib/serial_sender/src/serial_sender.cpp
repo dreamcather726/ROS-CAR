@@ -13,6 +13,11 @@ static inline float ss_wrap_deg_360(float deg) {
   return x;
 }
 
+static inline void write_le16(uint8_t *buf, uint16_t val) {
+  buf[0] = static_cast<uint8_t>(val & 0xFF);
+  buf[1] = static_cast<uint8_t>((val >> 8) & 0xFF);
+}
+
 // 计算 CRC16。
 // 这里使用串口和工业协议里很常见的 CRC16-Modbus。
 // 初学时只要记住：按字节循环，再按位循环即可。
@@ -134,8 +139,7 @@ uint8_t ss_build_frame(uint8_t func,// 功能码
   }
 
   uint16_t crc = ss_crc16(crc_input, 1 + data_len);
-  out[3 + payload_len] = static_cast<uint8_t>(crc & 0xFF);
-  out[4 + payload_len] = static_cast<uint8_t>((crc >> 8) & 0xFF);
+  write_le16(&out[3 + payload_len], crc);
   out[5 + payload_len] = FRAME_TAIL;
   return frame_len;
 }

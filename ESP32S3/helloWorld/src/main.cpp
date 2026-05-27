@@ -12,6 +12,7 @@ static constexpr uint8_t FRAME_FUNC_ENCODER = 0x01;
 static constexpr uint8_t FRAME_FUNC_IMU = 0x02;
 
 static constexpr uint8_t CMD_FUNC_WHEEL_SPEED = 0x10;
+static constexpr float CMD_SPEED_MAX_CM_S = 80.0f;
 
 static int16_t read_i16_le(const uint8_t *p);// 读取 16 位有符号整数，小端序
 
@@ -82,8 +83,8 @@ void loop()
     if (rx.func == CMD_FUNC_WHEEL_SPEED && rx.payload_len >= 4) {
       const int16_t l = read_i16_le(&rx.payload[0]);
       const int16_t r = read_i16_le(&rx.payload[2]);
-      target_left_cm_s = static_cast<float>(l) / 100.0f;
-      target_right_cm_s = static_cast<float>(r) / 100.0f;
+      target_left_cm_s = constrain(static_cast<float>(l) / 100.0f, -CMD_SPEED_MAX_CM_S, CMD_SPEED_MAX_CM_S);
+      target_right_cm_s = constrain(static_cast<float>(r) / 100.0f, -CMD_SPEED_MAX_CM_S, CMD_SPEED_MAX_CM_S);
     } 
   }
 
