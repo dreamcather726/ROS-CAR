@@ -6,7 +6,6 @@ import threading
 import time
 import math
 
-
 HEADER = 0xAA
 TAIL = 0xBB
 
@@ -44,13 +43,16 @@ def _build_frame(func: int, payload: bytes) -> bytes:
     return bytes([HEADER, length]) + data + bytes([crc & 0xFF, (crc >> 8) & 0xFF, TAIL])
 
 
+# ====================== 这里修复了！======================
 def build_wheel_speed_frame(left_cm_s: float, right_cm_s: float) -> bytes:
     l = int(round(left_cm_s * 100.0))
     r = int(round(right_cm_s * 100.0))
     l = max(-32768, min(32767, l))
     r = max(-32768, min(32767, r))
-    payload = struct.pack("<hh", l, r) + b"\x00\x00"
+    # 去掉多余的 + b"\x00\x00"
+    payload = struct.pack("<hh", l, r)
     return _build_frame(FUNC_WHEEL_SPEED, payload)
+# ========================================================
 
 
 def _i24_le(v: int) -> bytes:
@@ -135,8 +137,8 @@ class SerialControlApp:
         self._root.title("ROS-CAR 串口控制")
 
         try:
-            import serial  # type: ignore
-            from serial.tools import list_ports  # type: ignore
+            import serial
+            from serial.tools import list_ports
         except Exception:
             messagebox.showerror("缺少依赖", "请先安装 pyserial：pip install pyserial")
             raise
@@ -205,6 +207,11 @@ class SerialControlApp:
         ttk.Button(btns, text="发送一次", command=self._send_once).grid(row=0, column=0, padx=(0, 6))
         self.btn_repeat = ttk.Button(btns, text="开始循环", command=self._toggle_repeat)
         self.btn_repeat.grid(row=0, column=1)
+
+        row += 1
+        btns2 = ttk.Frame(frm)
+        btns2.grid(row=row, column=0, columnspan=3, sticky="w", pady=(6, 0))
+        ttk.Button(btns2, text="发送停止", command=self._send_stop).grid(row=0, column=0)
 
         row += 1
         ttk.Label(frm, text="发送帧(HEX)").grid(row=row, column=0, sticky="w", pady=(10, 0))
@@ -408,6 +415,10 @@ class SerialControlApp:
         except Exception as e:
             messagebox.showerror("参数错误", str(e))
             return
+        self._send_frame(frame)
+
+    def _send_stop(self) -> None:
+        frame = build_wheel_speed_frame(0.0, 0.0)
         self._send_frame(frame)
 
     def _repeat_tick(self) -> None:

@@ -3,6 +3,7 @@
 #include <wheel_encoder.h>
 #include "speed_pid.h"
 #include "serial_sender.h"
+#include "serial_receive.h"
 #include <Ticker.h>
 #include "imu.h"
 
@@ -11,7 +12,7 @@ static constexpr uint8_t FRAME_FUNC_ENCODER = 0x01;
 static constexpr uint8_t FRAME_FUNC_IMU = 0x02;
 
 // 是否每秒打印一次调试信息
-static constexpr bool DEBUG_SENSOR_PRINT = true;
+static constexpr bool DEBUG_SENSOR_PRINT = false;
 
 // PID 控制器（左右轮各一套）
 static PID pidL;
@@ -71,11 +72,7 @@ void setup()
 
 void loop()
 {
-  // 1) 串口接收：必须放在 loop() 最前面，保证接收及时
-  if (Serial.available() > 0) {
-    char c = Serial.read();
-    // 后续在此处添加指令解析逻辑
-  }
+  serial_receive_update(Serial);
 
   // 2) 每 50ms 执行一次：PID
   if (due_50ms) {
@@ -113,13 +110,13 @@ void loop()
   // 3) 每 100ms 执行一次：发送传感器数据
   if (due_100ms) {
     due_100ms = false;
-    uint8_t enc_payload[6];
-    uint8_t imu_payload[18];
-    ss_pack_int_le(latest_left_count, 3, &enc_payload[0]);//打包左轮总计数
-    ss_pack_int_le(latest_right_count, 3, &enc_payload[3]);//打包右轮总计数
-    ss_pack_mpu6050_bundle(ax,ay,az,gx,gy,gz,roll,pitch,yaw,imu_payload);//打包IMU数据帧
-    ss_send(Serial, FRAME_FUNC_ENCODER, enc_payload, 6, false);//发送编码器总计数
-    ss_send(Serial, FRAME_FUNC_IMU, imu_payload, 18, false);//发送IMU数据帧
+    // uint8_t enc_payload[6];
+    // uint8_t imu_payload[18];
+    // ss_pack_int_le(latest_left_count, 3, &enc_payload[0]);//打包左轮总计数
+    // ss_pack_int_le(latest_right_count, 3, &enc_payload[3]);//打包右轮总计数
+    // ss_pack_mpu6050_bundle(ax,ay,az,gx,gy,gz,roll,pitch,yaw,imu_payload);//打包IMU数据帧
+    // ss_send(Serial, FRAME_FUNC_ENCODER, enc_payload, 6, false);//发送编码器总计数
+    // ss_send(Serial, FRAME_FUNC_IMU, imu_payload, 18, false);//发送IMU数据帧
   }
 
 
