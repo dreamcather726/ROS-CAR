@@ -1,4 +1,5 @@
 #include "wheel_encoder.h"
+#include <driver/gpio.h>
 
 static volatile int32_t g_left = 0;// 左轮累计计数
 static volatile int32_t g_right = 0;// 右轮累计计数
@@ -16,10 +17,15 @@ static const int8_t g_quad_table[16] = {
     -1, 0, 0, 1,
     0, 1, -1, 0};
 // 更新左轮计数
+static inline uint8_t IRAM_ATTR fast_gpio_read(uint8_t pin)
+{
+  return static_cast<uint8_t>(gpio_get_level(static_cast<gpio_num_t>(pin)));
+}
+
 static inline void IRAM_ATTR wheel_encoder_update_left()
 {
-  const uint8_t a = static_cast<uint8_t>(digitalRead(WHEEL_ENC_L_A_PIN));
-  const uint8_t b = static_cast<uint8_t>(digitalRead(WHEEL_ENC_L_B_PIN));
+  const uint8_t a = fast_gpio_read(WHEEL_ENC_L_A_PIN);
+  const uint8_t b = fast_gpio_read(WHEEL_ENC_L_B_PIN);
   const uint8_t state = static_cast<uint8_t>((a << 1) | b);
   const uint8_t table_idx = static_cast<uint8_t>((g_left_state << 2) | state);
   g_left += g_quad_table[table_idx];
@@ -28,8 +34,8 @@ static inline void IRAM_ATTR wheel_encoder_update_left()
 
 static inline void IRAM_ATTR wheel_encoder_update_right()
 {
-  const uint8_t a = static_cast<uint8_t>(digitalRead(WHEEL_ENC_R_A_PIN));
-  const uint8_t b = static_cast<uint8_t>(digitalRead(WHEEL_ENC_R_B_PIN));
+  const uint8_t a = fast_gpio_read(WHEEL_ENC_R_A_PIN);
+  const uint8_t b = fast_gpio_read(WHEEL_ENC_R_B_PIN);
   const uint8_t state = static_cast<uint8_t>((a << 1) | b);
   const uint8_t table_idx = static_cast<uint8_t>((g_right_state << 2) | state);
   g_right += g_quad_table[table_idx];
@@ -110,8 +116,8 @@ bool wheel_encoder_get_speed_cm_s(float *left_cm_s, float *right_cm_s, uint32_t 
   const int32_t dl = left - g_speed_last_left;
   const int32_t dr = right - g_speed_last_right;
   const float dt_s = static_cast<float>(dt_us) * 1e-6f;
-  const float v_left = wheel_encoder_delta_to_speed_cm_s(dl, dt_s);
-  const float v_right = wheel_encoder_delta_to_speed_cm_s(dr, dt_s);
+  const float v_left = wheel_encoder_delta_counts_to_speed_cm_s(dl, dt_s);
+  const float v_right = wheel_encoder_delta_counts_to_speed_cm_s(dr, dt_s);
 
   if (left_cm_s) *left_cm_s = v_left;
   if (right_cm_s) *right_cm_s = v_right;

@@ -1,7 +1,7 @@
 #include "serial_receive.h"
 
-static constexpr uint8_t SERIAL_RECEIVE_HEADER = 0xAA;
-static constexpr uint8_t SERIAL_RECEIVE_TAIL = 0xBB;
+static constexpr uint8_t FRAME_HEADER = 0xAA;
+static constexpr uint8_t FRAME_TAIL = 0xBB;
 
 static constexpr size_t SERIAL_RECEIVE_MAX_DATA_SIZE = 1 + SERIAL_RECEIVE_MAX_PAYLOAD_SIZE;
 static constexpr size_t SERIAL_RECEIVE_MAX_FRAME_SIZE = 1 + 1 + SERIAL_RECEIVE_MAX_DATA_SIZE + 2 + 1;
@@ -76,7 +76,7 @@ static bool rx_try_finish_frame()
   }
 
   const uint8_t tail = g_rx_frame[g_expect_len - 1];
-  if (tail != SERIAL_RECEIVE_TAIL) {
+  if (tail != FRAME_TAIL) {
     rx_reset_state();
     return true;
   }
@@ -134,7 +134,7 @@ void serial_receive_update(Stream &serial)
     g_last_byte_ms = millis();
 
     if (g_rx_pos == 0) {
-      if (ub != SERIAL_RECEIVE_HEADER) {
+      if (ub != FRAME_HEADER) {
         continue;
       }
       g_rx_frame[0] = ub;

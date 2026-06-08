@@ -12,19 +12,19 @@ static constexpr uint8_t WHEEL_ENC_R_B_PIN = 41;// 右轮编码器B引脚
 static constexpr int8_t WHEEL_ENC_L_SIGN = MOTOR_A_INVERT_DIR ? 1 : -1;// 左轮方向修正：1=不变，-1=取反
 static constexpr int8_t WHEEL_ENC_R_SIGN = MOTOR_B_INVERT_DIR ? 1 : -1;// 右轮方向修正：1=不变，-1=取反
 
-static constexpr float WHEEL_ODOM_DIAMETER_CM = 7.0f;// 轮子直径（单位：厘米）
-static constexpr float WHEEL_ODOM_COUNTS_PER_REV = 600.0f; // 每转一次的计数
-static constexpr float WHEEL_ODOM_CM_PER_COUNT = (WHEEL_ODOM_DIAMETER_CM * PI) / WHEEL_ODOM_COUNTS_PER_REV; // 每个计数对应的厘米数
+static constexpr float WHEEL_DIAMETER_CM = 7.0f;// 轮子直径（单位：厘米）
+static constexpr float WHEEL_COUNTS_PER_REV = 600.0f; // 每转一次的计数
+static constexpr float WHEEL_CM_PER_COUNT = (WHEEL_DIAMETER_CM * PI) / WHEEL_COUNTS_PER_REV; // 每个计数对应的厘米数
 // 转换计数为厘米
-inline float wheel_encoder_counts_to_cm(int32_t counts)
+inline float wheel_encoder_counts_to_distance_cm(int32_t counts)
 {
-  return static_cast<float>(counts) * WHEEL_ODOM_CM_PER_COUNT;
+  return static_cast<float>(counts) * WHEEL_CM_PER_COUNT;
 }
 
 // 计算速度（单位：厘米/秒）    
-inline float wheel_encoder_delta_to_speed_cm_s(int32_t delta_counts, float dt_s)
+inline float wheel_encoder_delta_counts_to_speed_cm_s(int32_t delta_counts, float dt_s)
 {
-  return static_cast<float>(delta_counts) * WHEEL_ODOM_CM_PER_COUNT / dt_s;
+  return static_cast<float>(delta_counts) * WHEEL_CM_PER_COUNT / dt_s;
 }
 
 // 速度计算初始化（通常在 wheel_encoder_init 后调用一次）

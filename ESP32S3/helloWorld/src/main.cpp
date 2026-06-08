@@ -6,6 +6,7 @@
 #include "serial_receive.h"
 #include <Ticker.h>
 #include "imu.h"
+#define PID_INTERVAL_US 50000
 
 // 串口发送功能码：编码器总计数
 static constexpr uint8_t FRAME_FUNC_ENCODER = 0x01;
@@ -13,6 +14,8 @@ static constexpr uint8_t FRAME_FUNC_IMU = 0x02;
 
 static constexpr uint8_t CMD_FUNC_WHEEL_SPEED = 0x10;
 static constexpr float CMD_SPEED_MAX_CM_S = 80.0f;
+static constexpr uint32_t CMD_SPEED_TIMEOUT_MS = 500;
+static constexpr int PWM_DEADBAND = 5;
 
 static int16_t read_i16_le(const uint8_t *p);// 读取 16 位有符号整数，小端序
 
@@ -26,6 +29,8 @@ static PID pidR;
 // 目标速度（cm/s），后续可通过串口指令修改
 static float target_left_cm_s = 0.0f;
 static float target_right_cm_s = 0.0f;
+static uint32_t last_speed_cmd_ms = 0;
+static bool speed_cmd_timed_out = false;
 
 // 最近一次计算得到的状态（用于发送/打印）
 static int32_t latest_left_count = 0;
@@ -57,10 +62,10 @@ void setup()
   wheel_encoder_init();
   wheel_encoder_speed_init();
   motor_init();
-  if(!mpu6050_init()) {
-    Serial.println("MPU6050 初始化失败");
-    while(true);
-  }
+  while (!mpu6050_init()) {
+  Serial.println("MPU6050 重试...");
+  delay(500);
+}
   mpu6050_calibrate();
   // PID 参数初始化
   pidL = {};
@@ -77,15 +82,33 @@ void setup()
 
 void loop()
 {
+  const uint32_t now_ms = millis();
   serial_receive_update(Serial);
   SerialReceiveFrame rx;
-  if (serial_receive_take_frame(&rx)) {
+  while (serial_receive_take_frame(&rx)) {
     if (rx.func == CMD_FUNC_WHEEL_SPEED && rx.payload_len >= 4) {
       const int16_t l = read_i16_le(&rx.payload[0]);
       const int16_t r = read_i16_le(&rx.payload[2]);
       target_left_cm_s = constrain(static_cast<float>(l) / 100.0f, -CMD_SPEED_MAX_CM_S, CMD_SPEED_MAX_CM_S);
       target_right_cm_s = constrain(static_cast<float>(r) / 100.0f, -CMD_SPEED_MAX_CM_S, CMD_SPEED_MAX_CM_S);
+      last_speed_cmd_ms = now_ms;
+      speed_cmd_timed_out = false;
     } 
+  }
+
+  if (last_speed_cmd_ms != 0 && (now_ms - last_speed_cmd_ms) > CMD_SPEED_TIMEOUT_MS) {
+   if (!speed_cmd_timed_out) {
+      // 停止电机 + 清空 PID
+      target_left_cm_s = 0;
+      target_right_cm_s = 0;
+      PID_Clear(&pidL);
+      PID_Clear(&pidR);
+      motorA_set(0);
+      motorB_set(0);
+      latest_pwmL = 0;
+      latest_pwmR = 0;
+      speed_cmd_timed_out = true;
+    }
   }
 
   // 2) 每 50ms 执行一次：PID
@@ -99,27 +122,30 @@ void loop()
 
     // 读取编码器：总计数 + 速度（cm/s）
     wheel_encoder_get_counts(&left_count, &right_count);
-    wheel_encoder_get_speed_cm_s(&left_cm_s, &right_cm_s,50000U);
+    const bool speed_updated = wheel_encoder_get_speed_cm_s(&left_cm_s, &right_cm_s, PID_INTERVAL_US);
     mpu6050_update();
     latest_left_count = left_count;
     latest_right_count = right_count;
-    latest_left_cm_s = left_cm_s;
-    latest_right_cm_s = right_cm_s;
+    if (speed_updated) {
+      latest_left_cm_s = left_cm_s;
+      latest_right_cm_s = right_cm_s;
+      if (fabs(target_left_cm_s) < 0.01) PID_Clear(&pidL);
+      if (fabs(target_right_cm_s) < 0.01) PID_Clear(&pidR);
+      float pwmL_float = PID_IncPIDCal(&pidL, left_cm_s, target_left_cm_s);
+      float pwmR_float = PID_IncPIDCal(&pidR, right_cm_s, target_right_cm_s);
+      int pwmL = constrain((int)pwmL_float, -255, 255);
+      int pwmR = constrain((int)pwmR_float, -255, 255);
+      if (abs(pwmL) < PWM_DEADBAND) pwmL = 0;
+      if (abs(pwmR) < PWM_DEADBAND) pwmR = 0;
+      motorA_set(pwmL);
+      motorB_set(pwmR);
 
-
-    // PID 计算并输出到电机
-    float pwmL_float = PID_IncPIDCal(&pidL, left_cm_s, target_left_cm_s);
-    float pwmR_float = PID_IncPIDCal(&pidR, right_cm_s, target_right_cm_s);
-    int pwmL = constrain((int)pwmL_float, -255, 255);
-    int pwmR = constrain((int)pwmR_float, -255, 255);
-    motorA_set(pwmL);
-    motorB_set(pwmR);
-
-    latest_pwmL = pwmL;
-    latest_pwmR = pwmR;
+      latest_pwmL = pwmL;
+      latest_pwmR = pwmR;
+    }
   }
   // 3) 每 100ms 执行一次：发送传感器数据
-  if (due_100ms) {
+  if (due_100ms && !DEBUG_SENSOR_PRINT) {
     due_100ms = false;
     uint8_t enc_payload[6];
     uint8_t imu_payload[18];
