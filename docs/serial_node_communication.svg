@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <defs>
+    <style>
+      .bg { fill: #f7f9fc; }
+      .title { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 34px; font-weight: 800; fill: #172033; }
+      .subtitle { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 18px; fill: #526070; }
+      .section { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 23px; font-weight: 800; fill: #172033; }
+      .node-title { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 20px; font-weight: 800; fill: #172033; }
+      .body { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 15px; fill: #354154; }
+      .small { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 13px; fill: #526070; }
+      .topic { font-family: Consolas, "Microsoft YaHei", monospace; font-size: 14px; font-weight: 700; fill: #234765; }
+      .frame { font-family: Consolas, "Microsoft YaHei", monospace; font-size: 13px; fill: #24384f; }
+      .lane { fill: #ffffff; stroke: #d8e0ea; stroke-width: 2; rx: 10; }
+      .node-blue { fill: #eef6ff; stroke: #82b5e8; stroke-width: 2; rx: 8; }
+      .node-green { fill: #eefaf3; stroke: #86c99f; stroke-width: 2; rx: 8; }
+      .node-amber { fill: #fff7e7; stroke: #dfb45d; stroke-width: 2; rx: 8; }
+      .node-red { fill: #fff0f0; stroke: #dc8b8b; stroke-width: 2; rx: 8; }
+      .box { fill: #ffffff; stroke: #d8e0ea; stroke-width: 2; rx: 8; }
+      .arrow { stroke: #33465c; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .return { stroke: #2d7d52; stroke-width: 3; fill: none; marker-end: url(#arrow-green); }
+      .serial { stroke: #1d2938; stroke-width: 5; fill: none; marker-end: url(#arrow-dark); }
+      .dash { stroke: #69798c; stroke-width: 2.5; fill: none; marker-end: url(#arrow-soft); stroke-dasharray: 8 7; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#33465c"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#2d7d52"/>
+    </marker>
+    <marker id="arrow-dark" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#1d2938"/>
+    </marker>
+    <marker id="arrow-soft" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#69798c"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1600" height="1000"/>
+
+  <text x="70" y="65" class="title">上位机串口通信节点详情图</text>
+  <text x="70" y="98" class="subtitle">MUSE PI 上运行 ROS2 节点；car_cmd_node 生成待发送帧，serial_node 负责真实 USB 串口收发，ESP32-S3 负责实时底盘控制与传感器回传。</text>
+
+  <rect x="60" y="135" width="1480" height="310" class="lane"/>
+  <text x="85" y="175" class="section">1. 上位机发送链路：ROS2 速度命令 -> 串口帧 -> ESP32</text>
+
+  <rect x="95" y="225" width="275" height="115" class="node-green"/>
+  <text x="115" y="255" class="node-title">控制来源节点</text>
+  <text x="115" y="285" class="body">键盘 / GUI / 视觉跟随 / Nav2</text>
+  <text x="115" y="312" class="topic">发布: /cmd_vel</text>
+
+  <rect x="455" y="205" width="315" height="155" class="node-blue"/>
+  <text x="475" y="238" class="node-title">car_cmd_node</text>
+  <text x="475" y="268" class="topic">订阅: /cmd_vel</text>
+  <text x="475" y="292" class="body">读取 linear.x 与 angular.z</text>
+  <text x="475" y="316" class="body">换算 left_mps / right_mps</text>
+  <text x="475" y="340" class="topic">发布: /serial/tx_frame</text>
+
+  <rect x="860" y="205" width="315" height="155" class="node-blue"/>
+  <text x="880" y="238" class="node-title">serial_node</text>
+  <text x="880" y="268" class="topic">订阅: /serial/tx_frame</text>
+  <text x="880" y="292" class="body">打开 /dev/ttyUSB0</text>
+  <text x="880" y="316" class="body">波特率 115200</text>
+  <text x="880" y="340" class="body">把 UInt8MultiArray 写入串口</text>
+
+  <rect x="1265" y="225" width="220" height="115" class="node-red"/>
+  <text x="1285" y="255" class="node-title">ESP32-S3</text>
+  <text x="1285" y="285" class="body">解析速度命令帧</text>
+  <text x="1285" y="312" class="body">执行电机 PID 控制</text>
+
+  <path d="M370 282 L455 282" class="arrow"/>
+  <text x="382" y="265" class="topic">/cmd_vel</text>
+  <path d="M770 282 L860 282" class="arrow"/>
+  <text x="782" y="265" class="topic">/serial/tx_frame</text>
+  <path d="M1175 282 L1265 282" class="serial"/>
+  <text x="1185" y="260" class="topic">USB/UART</text>
+
+  <rect x="95" y="375" width="1390" height="45" class="box"/>
+  <text x="115" y="403" class="frame">发送帧格式: [0]AA [1]10 [2..3]左轮速度i16 [4..5]右轮速度i16 [6..7]保留 [8]checksum [9]BB</text>
+
+  <rect x="60" y="480" width="1480" height="380" class="lane"/>
+  <text x="85" y="520" class="section">2. 上位机接收链路：ESP32 传感器数据 -> 串口帧 -> ROS2 话题</text>
+
+  <rect x="95" y="590" width="245" height="120" class="node-red"/>
+  <text x="115" y="620" class="node-title">ESP32-S3</text>
+  <text x="115" y="650" class="body">编码器计数</text>
+  <text x="115" y="674" class="body">左右轮速度</text>
+  <text x="115" y="698" class="body">IMU RPY</text>
+
+  <rect x="430" y="565" width="340" height="170" class="node-blue"/>
+  <text x="450" y="598" class="node-title">serial_node</text>
+  <text x="450" y="628" class="body">读取固定 10 字节串口帧</text>
+  <text x="450" y="652" class="body">检查帧头 AA / 帧尾 BB</text>
+  <text x="450" y="676" class="body">校验 checksum</text>
+  <text x="450" y="700" class="body">按功能码 func 分发 ROS2 消息</text>
+
+  <rect x="875" y="520" width="300" height="88" class="node-green"/>
+  <text x="895" y="550" class="node-title">编码器计数</text>
+  <text x="895" y="578" class="topic">/car/odom/counts</text>
+
+  <rect x="875" y="630" width="300" height="88" class="node-green"/>
+  <text x="895" y="660" class="node-title">轮速与车体速度</text>
+  <text x="895" y="688" class="topic">/car/odom/wheel_speed_mps</text>
+  <text x="895" y="708" class="topic">/car/twist</text>
+
+  <rect x="1220" y="520" width="300" height="88" class="node-green"/>
+  <text x="1240" y="550" class="node-title">IMU 姿态</text>
+  <text x="1240" y="578" class="topic">/car/imu/rpy_deg</text>
+
+  <rect x="875" y="745" width="645" height="75" class="node-amber"/>
+  <text x="895" y="775" class="node-title">串口诊断状态</text>
+  <text x="895" y="803" class="topic">/car/serial/status: connected, ok_frames, checksum_fail, bad_tail, unknown_func</text>
+
+  <path d="M340 650 L430 650" class="serial"/>
+  <text x="350" y="630" class="topic">USB/UART 回传</text>
+  <path d="M770 620 C810 585 830 565 875 564" class="return"/>
+  <path d="M770 660 C815 665 830 674 875 674" class="return"/>
+  <path d="M770 635 C960 545 1040 540 1220 564" class="return"/>
+  <path d="M770 715 C830 780 840 782 875 782" class="return"/>
+
+  <rect x="95" y="790" width="675" height="45" class="box"/>
+  <text x="115" y="818" class="frame">接收帧格式: [0]AA [1]func [2..7]payload6 [8]checksum [9]BB</text>
+
+  <rect x="60" y="890" width="1480" height="75" class="lane"/>
+  <text x="85" y="922" class="section">3. 当前功能码</text>
+  <text x="90" y="952" class="frame">0x10 上位机发送: 左右轮目标速度</text>
+  <text x="420" y="952" class="frame">0x01 回传: 编码器计数</text>
+  <text x="690" y="952" class="frame">0x02 回传: 左右轮速度</text>
+  <text x="955" y="952" class="frame">0x04 回传: IMU RPY</text>
+</svg>

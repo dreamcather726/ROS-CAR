@@ -1,0 +1,166 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1250" viewBox="0 0 1800 1250">
+  <defs>
+    <style>
+      .bg { fill: #f7f9fc; }
+      .title { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 36px; font-weight: 800; fill: #172033; }
+      .subtitle { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 18px; fill: #526070; }
+      .section { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 23px; font-weight: 800; fill: #172033; }
+      .node-title { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 18px; font-weight: 800; fill: #172033; }
+      .body { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 14px; fill: #354154; }
+      .topic { font-family: Consolas, "Microsoft YaHei", monospace; font-size: 13px; font-weight: 700; fill: #234765; }
+      .small { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 12px; fill: #526070; }
+      .lane { fill: #ffffff; stroke: #d8e0ea; stroke-width: 2; rx: 10; }
+      .bus { fill: #ffffff; stroke: #b9c4d1; stroke-width: 2; rx: 10; }
+      .node-blue { fill: #eef6ff; stroke: #82b5e8; stroke-width: 2; rx: 8; }
+      .node-green { fill: #eefaf3; stroke: #86c99f; stroke-width: 2; rx: 8; }
+      .node-amber { fill: #fff7e7; stroke: #dfb45d; stroke-width: 2; rx: 8; }
+      .node-red { fill: #fff0f0; stroke: #dc8b8b; stroke-width: 2; rx: 8; }
+      .node-gray { fill: #f3f5f8; stroke: #b9c4d1; stroke-width: 2; rx: 8; }
+      .arrow { stroke: #33465c; stroke-width: 2.8; fill: none; marker-end: url(#arrow); }
+      .serial { stroke: #1d2938; stroke-width: 4.5; fill: none; marker-end: url(#arrow-dark); }
+      .return { stroke: #2d7d52; stroke-width: 2.8; fill: none; marker-end: url(#arrow-green); }
+      .divider { stroke: #d8e0ea; stroke-width: 1.5; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#33465c"/>
+    </marker>
+    <marker id="arrow-dark" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#1d2938"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#2d7d52"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1800" height="1250"/>
+  <text x="70" y="65" class="title">项目完成后的 ROS2 全部节点分布</text>
+  <text x="70" y="100" class="subtitle">简化版：每层只画本层主链路，跨层关系统一放在右侧 Topic 总线，避免长距离交叉箭头。已取消超声波。</text>
+
+  <rect x="60" y="135" width="1250" height="155" class="lane"/>
+  <text x="85" y="174" class="section">1. 控制输入与速度仲裁</text>
+  <rect x="95" y="205" width="245" height="60" class="node-green"/>
+  <text x="115" y="230" class="node-title">teleop_keyboard_node</text>
+  <text x="115" y="252" class="topic">发布: /cmd_vel_raw</text>
+  <rect x="395" y="205" width="245" height="60" class="node-green"/>
+  <text x="415" y="230" class="node-title">gui_control_node</text>
+  <text x="415" y="252" class="topic">发布: /cmd_vel_raw</text>
+  <rect x="695" y="205" width="245" height="60" class="node-gray"/>
+  <text x="715" y="230" class="node-title">nav2_controller</text>
+  <text x="715" y="252" class="topic">发布: /cmd_vel_nav</text>
+  <rect x="1000" y="205" width="250" height="60" class="node-amber"/>
+  <text x="1020" y="230" class="node-title">cmd_vel_mux / safety</text>
+  <text x="1020" y="252" class="topic">发布: /cmd_vel</text>
+  <path d="M340 235 L395 235" class="arrow"/>
+  <path d="M640 235 L695 235" class="arrow"/>
+  <path d="M940 235 L1000 235" class="arrow"/>
+
+  <rect x="60" y="325" width="1250" height="175" class="lane"/>
+  <text x="85" y="364" class="section">2. 底盘串口通信</text>
+  <rect x="95" y="405" width="260" height="64" class="node-blue"/>
+  <text x="115" y="430" class="node-title">car_cmd_node</text>
+  <text x="115" y="452" class="topic">/cmd_vel -> /serial/tx_frame</text>
+  <rect x="445" y="405" width="300" height="64" class="node-blue"/>
+  <text x="465" y="430" class="node-title">serial_node</text>
+  <text x="465" y="452" class="topic">USB/UART 桥接</text>
+  <rect x="835" y="405" width="230" height="64" class="node-red"/>
+  <text x="855" y="430" class="node-title">ESP32-S3</text>
+  <text x="855" y="452" class="body">电机 PID / 编码器 / IMU</text>
+  <rect x="1135" y="405" width="140" height="64" class="node-green"/>
+  <text x="1155" y="430" class="node-title">monitor</text>
+  <text x="1155" y="452" class="topic">/status</text>
+  <path d="M355 437 L445 437" class="arrow"/>
+  <path d="M745 437 L835 437" class="serial"/>
+  <path d="M1065 437 L1135 437" class="return"/>
+
+  <rect x="60" y="535" width="1250" height="175" class="lane"/>
+  <text x="85" y="574" class="section">3. 感知节点</text>
+  <rect x="95" y="615" width="260" height="64" class="node-green"/>
+  <text x="115" y="640" class="node-title">usb_camera_node</text>
+  <text x="115" y="662" class="topic">发布: /camera/image_raw</text>
+  <rect x="445" y="615" width="260" height="64" class="node-green"/>
+  <text x="465" y="640" class="node-title">color_target_node</text>
+  <text x="465" y="662" class="topic">发布: /vision/target</text>
+  <rect x="795" y="615" width="220" height="64" class="node-green"/>
+  <text x="815" y="640" class="node-title">lidar_node</text>
+  <text x="815" y="662" class="topic">发布: /scan</text>
+  <rect x="1085" y="615" width="190" height="64" class="node-green"/>
+  <text x="1105" y="640" class="node-title">robot_state_pub</text>
+  <text x="1105" y="662" class="topic">发布: /tf</text>
+  <path d="M355 647 L445 647" class="arrow"/>
+
+  <rect x="60" y="745" width="1250" height="175" class="lane"/>
+  <text x="85" y="784" class="section">4. 定位、建图与导航</text>
+  <rect x="95" y="825" width="260" height="64" class="node-amber"/>
+  <text x="115" y="850" class="node-title">ekf_localization_node</text>
+  <text x="115" y="872" class="topic">发布: /odom /tf</text>
+  <rect x="445" y="825" width="240" height="64" class="node-amber"/>
+  <text x="465" y="850" class="node-title">slam_toolbox</text>
+  <text x="465" y="872" class="topic">发布: /map</text>
+  <rect x="775" y="825" width="240" height="64" class="node-amber"/>
+  <text x="795" y="850" class="node-title">nav2_bringup</text>
+  <text x="795" y="872" class="topic">发布: /cmd_vel_nav</text>
+  <rect x="1105" y="825" width="170" height="64" class="node-gray"/>
+  <text x="1125" y="850" class="node-title">rviz2</text>
+  <text x="1125" y="872" class="topic">显示调试</text>
+  <path d="M355 857 L445 857" class="arrow"/>
+  <path d="M685 857 L775 857" class="arrow"/>
+  <path d="M1015 857 L1105 857" class="arrow"/>
+
+  <rect x="60" y="955" width="1250" height="175" class="lane"/>
+  <text x="85" y="994" class="section">5. 机械臂扩展节点</text>
+  <rect x="95" y="1035" width="270" height="64" class="node-blue"/>
+  <text x="115" y="1060" class="node-title">arm_controller_node</text>
+  <text x="115" y="1082" class="topic">订阅: /arm/*</text>
+  <rect x="455" y="1035" width="250" height="64" class="node-green"/>
+  <text x="475" y="1060" class="node-title">joint_state_node</text>
+  <text x="475" y="1082" class="topic">发布: /joint_states</text>
+  <rect x="795" y="1035" width="250" height="64" class="node-amber"/>
+  <text x="815" y="1060" class="node-title">grasp_task_node</text>
+  <text x="815" y="1082" class="topic">订阅: /vision/target</text>
+  <rect x="1135" y="1035" width="140" height="64" class="node-gray"/>
+  <text x="1155" y="1060" class="node-title">moveit2</text>
+  <text x="1155" y="1082" class="topic">可选</text>
+  <path d="M365 1067 L455 1067" class="arrow"/>
+  <path d="M705 1067 L795 1067" class="arrow"/>
+  <path d="M1045 1067 L1135 1067" class="arrow"/>
+
+  <rect x="1350" y="135" width="390" height="995" class="bus"/>
+  <text x="1380" y="174" class="section">关键 Topic 总线</text>
+  <text x="1380" y="210" class="small">跨层关系不再画长箭头，统一看这里。</text>
+  <line x1="1380" y1="235" x2="1710" y2="235" class="divider"/>
+
+  <text x="1380" y="270" class="node-title">控制</text>
+  <text x="1380" y="300" class="topic">/cmd_vel_raw</text>
+  <text x="1380" y="325" class="topic">/cmd_vel_nav</text>
+  <text x="1380" y="350" class="topic">/cmd_vel</text>
+  <text x="1380" y="375" class="topic">/serial/tx_frame</text>
+
+  <line x1="1380" y1="405" x2="1710" y2="405" class="divider"/>
+  <text x="1380" y="440" class="node-title">底盘回传</text>
+  <text x="1380" y="470" class="topic">/car/odom/counts</text>
+  <text x="1380" y="495" class="topic">/car/odom/wheel_speed_mps</text>
+  <text x="1380" y="520" class="topic">/car/twist</text>
+  <text x="1380" y="545" class="topic">/car/imu/rpy_deg</text>
+  <text x="1380" y="570" class="topic">/car/serial/status</text>
+
+  <line x1="1380" y1="600" x2="1710" y2="600" class="divider"/>
+  <text x="1380" y="635" class="node-title">感知</text>
+  <text x="1380" y="665" class="topic">/camera/image_raw</text>
+  <text x="1380" y="690" class="topic">/vision/target</text>
+  <text x="1380" y="715" class="topic">/scan</text>
+  <text x="1380" y="740" class="topic">/tf /tf_static</text>
+
+  <line x1="1380" y1="770" x2="1710" y2="770" class="divider"/>
+  <text x="1380" y="805" class="node-title">导航</text>
+  <text x="1380" y="835" class="topic">/odom</text>
+  <text x="1380" y="860" class="topic">/map</text>
+  <text x="1380" y="885" class="topic">/goal_pose</text>
+
+  <line x1="1380" y1="915" x2="1710" y2="915" class="divider"/>
+  <text x="1380" y="950" class="node-title">机械臂</text>
+  <text x="1380" y="980" class="topic">/arm/cmd_pose</text>
+  <text x="1380" y="1005" class="topic">/arm/joint_cmd</text>
+  <text x="1380" y="1030" class="topic">/joint_states</text>
+
+  <text x="1380" y="1085" class="small">阅读顺序：先看左侧每层节点，再看右侧对应话题。</text>
+</svg>

@@ -109,7 +109,12 @@ def _parse_frame(frame: bytes) -> str:
     if func == FUNC_ENCODER_COUNTS and len(payload) >= 6:
         left = _read_i24_le(payload, 0)
         right = _read_i24_le(payload, 3)
-        return f"enc_counts left={left} right={right}"
+        speed_part = ""
+        if len(payload) >= 10:
+            left_speed = _read_i16_le(payload, 6) / 100.0
+            right_speed = _read_i16_le(payload, 8) / 100.0
+            speed_part = f" v=({left_speed:.2f},{right_speed:.2f})cm/s"
+        return f"enc_counts left={left} right={right}{speed_part}"
 
     if func == FUNC_IMU_BUNDLE and len(payload) >= 18:
         ax = _read_i16_le(payload, 0)
@@ -437,7 +442,12 @@ class SerialControlApp:
 
             now = time.monotonic()
             speed_part = ""
-            if self._last_counts is not None and self._last_counts_t is not None:
+            if len(payload) >= 10:
+                v_l = _read_i16_le(payload, 6) / 100.0
+                v_r = _read_i16_le(payload, 8) / 100.0
+                speed_part = f" v=({v_l:.2f},{v_r:.2f})cm/s"
+                self._record_actual_speed(v_l, v_r, now)
+            elif self._last_counts is not None and self._last_counts_t is not None:
                 dt = now - self._last_counts_t
                 if dt > 1e-6:
                     dl = left - self._last_counts[0]

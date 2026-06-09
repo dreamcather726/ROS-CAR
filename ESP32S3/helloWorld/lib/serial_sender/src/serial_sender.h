@@ -62,8 +62,9 @@ uint8_t ss_build_frame(uint8_t func,// 功能码
                        const uint8_t payload[],// 数据区
                        uint8_t payload_len,// 数据区长度
                        uint8_t out[SERIAL_SENDER_MAX_FRAME_SIZE]);
-void ss_send(HardwareSerial &serial,
-             uint8_t func,
-             const uint8_t payload[],
-             uint8_t payload_len,
-             bool flush_after_send);
+void ss_send(HardwareSerial &serial,//选择串口
+             uint8_t func,//功能码
+             const uint8_t payload[],//数据区
+             uint8_t payload_len,//数据区长度
+             bool flush_after_send//是否发送后立即 flush，确保数据尽快发出
+            );

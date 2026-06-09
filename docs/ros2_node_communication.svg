@@ -1,0 +1,176 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1200" viewBox="0 0 1800 1200">
+  <defs>
+    <style>
+      .bg { fill: #f7f9fc; }
+      .title { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 36px; font-weight: 800; fill: #172033; }
+      .subtitle { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 18px; fill: #526070; }
+      .lane-title { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 22px; font-weight: 800; fill: #172033; }
+      .node-title { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 18px; font-weight: 800; fill: #172033; }
+      .text { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 14px; fill: #354154; }
+      .small { font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; font-size: 12px; fill: #526070; }
+      .topic { font-family: Consolas, "Microsoft YaHei", monospace; font-size: 13px; font-weight: 700; fill: #25415f; }
+      .lane { fill: #ffffff; stroke: #d8e0ea; stroke-width: 2; rx: 10; }
+      .node { fill: #eef6ff; stroke: #86b7e8; stroke-width: 2; rx: 8; }
+      .node-green { fill: #eefaf3; stroke: #88c99f; stroke-width: 2; rx: 8; }
+      .node-amber { fill: #fff7e7; stroke: #e1b65f; stroke-width: 2; rx: 8; }
+      .node-red { fill: #fff0f0; stroke: #dc8b8b; stroke-width: 2; rx: 8; }
+      .node-gray { fill: #f3f5f8; stroke: #b9c4d1; stroke-width: 2; rx: 8; }
+      .arrow { stroke: #33465c; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .arrow-soft { stroke: #69798c; stroke-width: 2; fill: none; marker-end: url(#arrow-soft); stroke-dasharray: 8 7; }
+      .serial { stroke: #1d2938; stroke-width: 4; fill: none; marker-end: url(#arrow-dark); }
+      .return { stroke: #2d7d52; stroke-width: 2.5; fill: none; marker-end: url(#arrow-green); }
+      .legend { fill: #ffffff; stroke: #d8e0ea; stroke-width: 2; rx: 8; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#33465c"/>
+    </marker>
+    <marker id="arrow-soft" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#69798c"/>
+    </marker>
+    <marker id="arrow-dark" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#1d2938"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#2d7d52"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1800" height="1200"/>
+
+  <text x="70" y="65" class="title">ROS2 通信节点分布详情图</text>
+  <text x="70" y="98" class="subtitle">MUSE PI 负责 ROS2 节点、感知、融合、决策；ESP32-S3 负责电机闭环、IMU/编码器/超声波实时采集；两侧通过 USB/UART 帧协议通信。</text>
+
+  <rect x="60" y="135" width="1680" height="180" class="lane"/>
+  <text x="85" y="172" class="lane-title">1. 控制输入层</text>
+
+  <rect x="95" y="200" width="250" height="82" class="node"/>
+  <text x="115" y="228" class="node-title">teleop_keyboard / GUI</text>
+  <text x="115" y="254" class="topic">发布: /cmd_vel_raw</text>
+  <text x="115" y="274" class="small">键盘、手柄、上位机界面控制</text>
+
+  <rect x="410" y="200" width="250" height="82" class="node"/>
+  <text x="430" y="228" class="node-title">nav2_controller</text>
+  <text x="430" y="254" class="topic">发布: /cmd_vel_nav</text>
+  <text x="430" y="274" class="small">导航规划输出速度</text>
+
+  <rect x="725" y="190" width="285" height="102" class="node-amber"/>
+  <text x="745" y="220" class="node-title">cmd_vel_mux / safety_node</text>
+  <text x="745" y="247" class="topic">订阅: /cmd_vel_raw, /cmd_vel_nav</text>
+  <text x="745" y="269" class="topic">发布: /cmd_vel</text>
+  <text x="745" y="288" class="small">选择控制源，限速，急停保护</text>
+
+  <rect x="1110" y="200" width="245" height="82" class="node-gray"/>
+  <text x="1130" y="228" class="node-title">joy_node / remote_node</text>
+  <text x="1130" y="254" class="topic">可选: /cmd_vel_raw</text>
+  <text x="1130" y="274" class="small">手柄或远程遥控扩展</text>
+
+  <path d="M345 241 L725 241" class="arrow"/>
+  <text x="515" y="229" class="topic">/cmd_vel_raw</text>
+  <path d="M660 241 L725 241" class="arrow"/>
+  <text x="665" y="229" class="topic">/cmd_vel_nav</text>
+  <path d="M1110 241 C1060 241 1055 241 1010 241" class="arrow-soft"/>
+
+  <rect x="60" y="350" width="1680" height="250" class="lane"/>
+  <text x="85" y="387" class="lane-title">2. 感知层</text>
+
+  <rect x="95" y="420" width="275" height="118" class="node-green"/>
+  <text x="115" y="450" class="node-title">usb_camera_node</text>
+  <text x="115" y="477" class="topic">设备: /dev/video20</text>
+  <text x="115" y="499" class="topic">发布: /camera/image_raw</text>
+  <text x="115" y="521" class="topic">可选: /camera/camera_info</text>
+
+  <rect x="430" y="420" width="275" height="118" class="node-green"/>
+  <text x="450" y="450" class="node-title">color_target_node</text>
+  <text x="450" y="477" class="topic">订阅: /camera/image_raw</text>
+  <text x="450" y="499" class="topic">发布: /vision/target</text>
+  <text x="450" y="521" class="small">目标中心、面积、丢失状态</text>
+
+  <rect x="765" y="420" width="275" height="118" class="node-green"/>
+  <text x="785" y="450" class="node-title">lidar_node</text>
+  <text x="785" y="477" class="topic">发布: /scan</text>
+  <text x="785" y="499" class="small">激光雷达，供 SLAM/Nav2 使用</text>
+
+  <rect x="1100" y="420" width="275" height="118" class="node-green"/>
+  <text x="1120" y="450" class="node-title">robot_state_publisher</text>
+  <text x="1120" y="477" class="topic">发布: /tf, /tf_static</text>
+  <text x="1120" y="499" class="small">base_link、laser、camera、imu 坐标</text>
+
+  <rect x="1435" y="420" width="245" height="118" class="node-gray"/>
+  <text x="1455" y="450" class="node-title">arm_sensor_node</text>
+  <text x="1455" y="477" class="topic">可选: /joint_states</text>
+  <text x="1455" y="499" class="small">机械臂关节反馈扩展</text>
+
+  <path d="M370 479 L430 479" class="arrow"/>
+  <text x="375" y="465" class="topic">/camera/image_raw</text>
+
+  <rect x="60" y="635" width="1680" height="265" class="lane"/>
+  <text x="85" y="672" class="lane-title">3. 底盘串口层与状态估计层</text>
+
+  <rect x="95" y="710" width="275" height="120" class="node"/>
+  <text x="115" y="740" class="node-title">car_cmd_node</text>
+  <text x="115" y="767" class="topic">订阅: /cmd_vel</text>
+  <text x="115" y="789" class="topic">发布: /serial/tx_frame</text>
+  <text x="115" y="811" class="small">Twist 转左右轮速度帧</text>
+
+  <rect x="450" y="710" width="310" height="120" class="node"/>
+  <text x="470" y="740" class="node-title">serial_node</text>
+  <text x="470" y="767" class="topic">订阅: /serial/tx_frame</text>
+  <text x="470" y="789" class="topic">发布: /car/odom/*, /car/imu/*</text>
+  <text x="470" y="811" class="topic">发布: /car/ultrasonic/range</text>
+
+  <rect x="840" y="710" width="300" height="120" class="node-amber"/>
+  <text x="860" y="740" class="node-title">ekf_localization_node</text>
+  <text x="860" y="767" class="topic">订阅: /car/twist, /car/imu/rpy_deg</text>
+  <text x="860" y="789" class="topic">发布: /odom, /tf</text>
+  <text x="860" y="811" class="small">建议后续改成标准 Imu/Odometry</text>
+
+  <rect x="1220" y="710" width="300" height="120" class="node-amber"/>
+  <text x="1240" y="740" class="node-title">slam_toolbox / nav2</text>
+  <text x="1240" y="767" class="topic">订阅: /scan, /odom, /tf</text>
+  <text x="1240" y="789" class="topic">发布: /map, /cmd_vel_nav</text>
+  <text x="1240" y="811" class="small">建图、定位、路径规划</text>
+
+  <path d="M1010 241 C1070 350 70 600 95 770" class="arrow"/>
+  <text x="110" y="695" class="topic">/cmd_vel</text>
+  <path d="M370 770 L450 770" class="arrow"/>
+  <text x="382" y="755" class="topic">/serial/tx_frame</text>
+  <path d="M760 760 L840 760" class="return"/>
+  <text x="765" y="745" class="topic">/car/twist</text>
+  <path d="M760 792 L840 792" class="return"/>
+  <text x="765" y="825" class="topic">/car/imu/rpy_deg</text>
+  <path d="M1140 770 L1220 770" class="arrow"/>
+  <text x="1155" y="755" class="topic">/odom + /tf</text>
+  <path d="M902 538 C980 625 1230 625 1320 710" class="arrow"/>
+  <text x="1035" y="625" class="topic">/scan</text>
+  <path d="M1238 538 C1265 615 1280 650 1320 710" class="arrow-soft"/>
+  <text x="1265" y="625" class="topic">/tf</text>
+
+  <rect x="60" y="935" width="1680" height="160" class="lane"/>
+  <text x="85" y="972" class="lane-title">4. ESP32-S3 实时控制层</text>
+
+  <rect x="135" y="1005" width="310" height="72" class="node-red"/>
+  <text x="155" y="1033" class="node-title">motor_pid_task</text>
+  <text x="155" y="1058" class="small">50ms 速度闭环，PWM/方向控制</text>
+
+  <rect x="535" y="1005" width="310" height="72" class="node-red"/>
+  <text x="555" y="1033" class="node-title">encoder_task + imu_task</text>
+  <text x="555" y="1058" class="small">编码器计数、轮速、MPU6050 姿态</text>
+
+  <rect x="935" y="1005" width="310" height="72" class="node-red"/>
+  <text x="955" y="1033" class="node-title">ultrasonic_task</text>
+  <text x="955" y="1058" class="small">超声波距离采样，防撞可扩展</text>
+
+  <rect x="1335" y="1005" width="310" height="72" class="node-red"/>
+  <text x="1355" y="1033" class="node-title">uart_protocol_task</text>
+  <text x="1355" y="1058" class="small">AA ... checksum ... BB 帧收发</text>
+
+  <path d="M605 830 C650 900 1390 900 1490 1005" class="serial"/>
+  <text x="910" y="920" class="topic">USB/UART: MUSE PI - ESP32-S3</text>
+  <path d="M1490 1005 C1360 890 720 890 605 830" class="return"/>
+  <text x="1010" y="890" class="topic">编码器 / IMU / 超声波回传</text>
+
+  <rect x="70" y="1120" width="1660" height="55" class="legend"/>
+  <text x="95" y="1143" class="node-title">建议拆分优先级：</text>
+  <text x="250" y="1143" class="text">先稳定 car_cmd_node + serial_node；再把当前 OpenCV 脚本迁移成 usb_camera_node / color_target_node；之后接入 lidar_node、ekf、slam_toolbox、nav2；机械臂最后单独做 arm_controller。</text>
+  <text x="95" y="1165" class="small">实线表示主要 Topic 流；虚线表示可选扩展；绿色箭头表示 ESP32 传感器回传或状态融合输入。</text>
+</svg>
