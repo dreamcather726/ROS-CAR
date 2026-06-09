@@ -20,11 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-                
-               
-                'serial_node = my_pkg.serial_node:main',
-                'serial_sub_demo = my_pkg.serial_sub_demo:main',
-                'car_cmd = my_pkg.car_cmd:main',
+                'esp32_bridge_node = my_pkg.esp32_bridge_node:main',
         ],
     },
 )
