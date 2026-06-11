@@ -20,6 +20,7 @@ setup(
     entry_points={
         'console_scripts': [
                 'esp32_bridge_node = my_pkg.esp32_bridge.esp32_bridge_node:main',
+                'tf_tree_node = my_pkg.tf_tree.tf_tree_node:main',
         ],
     },
 )
