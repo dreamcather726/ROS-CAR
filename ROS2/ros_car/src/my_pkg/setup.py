@@ -17,10 +17,9 @@ setup(
     maintainer_email='hyt@todo.todo',
     description='TODO: Package description',
     license='TODO: License declaration',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-                'esp32_bridge_node = my_pkg.esp32_bridge_node:main',
+                'esp32_bridge_node = my_pkg.esp32_bridge.esp32_bridge_node:main',
         ],
     },
 )

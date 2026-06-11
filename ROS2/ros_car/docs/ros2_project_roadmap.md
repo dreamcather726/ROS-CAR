@@ -51,7 +51,6 @@ esp32_bridge_node
 
 - `/odom`
 - `/imu/data`
-- `/battery_state`
 - `/esp32/status`
 
 #### lidar_node
@@ -78,7 +77,6 @@ esp32_bridge_node
 订阅：
 
 - `/robot_state`
-- `/battery_state`
 - `/esp32/status`
 - `/arm/status`
 
@@ -224,7 +222,6 @@ Nav2 输出：
 订阅：
 
 - `/esp32/status`
-- `/battery_state`
 - `/arm/status`
 - `/detected_objects`
 
