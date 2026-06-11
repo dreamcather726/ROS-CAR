@@ -1,0 +1,26 @@
+tf_tree_node:
+  ros__parameters:
+    odom_topic: "/odom"
+    odom_frame: "odom"
+    base_frame: "base_link"
+    base_footprint_frame: "base_footprint"
+    imu_frame: "imu_link"
+    laser_frame: "laser_link"
+    camera_frame: "camera_link"
+
+    base_footprint_x: 0.0
+    base_footprint_y: 0.0
+    base_footprint_z: 0.0
+
+    imu_x: 0.0
+    imu_y: 0.0
+    imu_z: 0.0
+
+    laser_x: 0.0
+    laser_y: 0.0
+    laser_z: 0.0
+
+    camera_x: 0.0
+    camera_y: 0.0
+    camera_z: 0.0
+    camera_yaw: 0.0
