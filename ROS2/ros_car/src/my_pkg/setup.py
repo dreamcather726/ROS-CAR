@@ -32,6 +32,10 @@ setup(
                 'my_pkg.esp32_bridge.esp32_bridge_node:main'
             ),
             'tf_tree_node = my_pkg.tf_tree.tf_tree_node:main',
+            (
+                'keyboard_control_node = '
+                'my_pkg.keyboard_control.keyboard_control_node:main'
+            ),
         ],
     },
 )
