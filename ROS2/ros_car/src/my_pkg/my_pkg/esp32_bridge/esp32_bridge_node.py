@@ -8,7 +8,7 @@ esp32_bridge_node
 4. 发布 /odom、/imu/rawdata、/imu/data 和 /esp32/status。
 
 运行：
-ros2 run my_pkg esp32_bridge_node --ros-args -p port:=/dev/ttyUSB0
+ros2 run my_pkg esp32_bridge_node --ros-args -p port:=/dev/ttyUSB1
 """
 
 import math
@@ -42,7 +42,7 @@ from my_pkg.esp32_bridge.serial_protocol import (
 )
 
 
-DEFAULT_PORT = "/dev/ttyUSB0"
+DEFAULT_PORT = "/dev/ttyUSB1"
 DEFAULT_BAUDRATE = 115200
 WHEEL_BASE_M = 0.18
 RECONNECT_INTERVAL_SEC = 5.0

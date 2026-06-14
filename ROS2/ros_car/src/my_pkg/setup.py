@@ -16,10 +16,7 @@ setup(
         ),
         (
             'share/' + package_name + '/config',
-            [
-                'config/tf_params.yaml',
-                'config/ydlidar_params.yaml',
-            ],
+            ['config/tf_params.yaml'],
         ),
     ],
     install_requires=['setuptools', 'pyserial'],
@@ -39,7 +36,6 @@ setup(
                 'keyboard_control_node = '
                 'my_pkg.keyboard_control.keyboard_control_node:main'
             ),
-            'ydlidar_node = my_pkg.lidar.ydlidar_node:main',
         ],
     },
 )

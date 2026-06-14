@@ -1,7 +1,8 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
@@ -17,21 +18,22 @@ def generate_launch_description():
     use_keyboard_control = LaunchConfiguration("use_keyboard_control")
     use_lidar = LaunchConfiguration("use_lidar")
     lidar_port = LaunchConfiguration("lidar_port")
+    ydlidar_driver_launch = LaunchConfiguration("ydlidar_driver_launch")
     tf_params_file = PathJoinSubstitution([
         FindPackageShare("my_pkg"),
         "config",
         "tf_params.yaml",
     ])
-    ydlidar_params_file = PathJoinSubstitution([
-        FindPackageShare("my_pkg"),
-        "config",
-        "ydlidar_params.yaml",
+    ydlidar_launch_file = PathJoinSubstitution([
+        FindPackageShare("ydlidar_ros2_driver"),
+        "launch",
+        ydlidar_driver_launch,
     ])
 
     return LaunchDescription([
         DeclareLaunchArgument(
             "port",
-            default_value="/dev/ttyUSB0",
+            default_value="/dev/ttyUSB1",
             description="Serial port connected to ESP32.",
         ),
         DeclareLaunchArgument(
@@ -67,12 +69,17 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "use_lidar",
             default_value="false",
-            description="Start ydlidar_node and publish /scan.",
+            description="Start ydlidar_ros2_driver and publish /scan.",
         ),
         DeclareLaunchArgument(
             "lidar_port",
             default_value="/dev/ydlidar",
             description="Serial port connected to YDLidar.",
+        ),
+        DeclareLaunchArgument(
+            "ydlidar_driver_launch",
+            default_value="ydlidar_launch.py",
+            description="Launch file from ydlidar_ros2_driver.",
         ),
         Node(
             package="my_pkg",
@@ -102,15 +109,11 @@ def generate_launch_description():
             output="screen",
             condition=IfCondition(use_keyboard_control),
         ),
-        Node(
-            package="my_pkg",
-            executable="ydlidar_node",
-            name="ydlidar_node",
-            output="screen",
-            parameters=[
-                ydlidar_params_file,
-                {"port": lidar_port},
-            ],
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(ydlidar_launch_file),
             condition=IfCondition(use_lidar),
+            launch_arguments={
+                "port": lidar_port,
+            }.items(),
         ),
     ])
