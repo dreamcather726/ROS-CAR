@@ -14,6 +14,7 @@ TAIL = 0xBB
 FUNC_ENCODER_COUNTS = 0x01
 FUNC_IMU_BUNDLE = 0x02
 FUNC_WHEEL_SPEED = 0x10
+FUNC_PID_CONTROL = 0x11
 
 MAX_PAYLOAD_SIZE = 32
 
@@ -54,6 +55,11 @@ def build_wheel_speed_frame(left_cm_s: float, right_cm_s: float) -> bytes:
     payload = struct.pack("<hh", l, r)
     return _build_frame(FUNC_WHEEL_SPEED, payload)
 # ========================================================
+
+
+def build_pid_control_frame(kp: float, ki: float, kd: float) -> bytes:
+    payload = struct.pack("<fff", kp, ki, kd)
+    return _build_frame(FUNC_PID_CONTROL, payload)
 
 
 def _i24_le(v: int) -> bytes:
@@ -114,7 +120,12 @@ def _parse_frame(frame: bytes) -> str:
             left_speed = _read_i16_le(payload, 6) / 100.0
             right_speed = _read_i16_le(payload, 8) / 100.0
             speed_part = f" v=({left_speed:.2f},{right_speed:.2f})cm/s"
-        return f"enc_counts left={left} right={right}{speed_part}"
+        pwm_part = ""
+        if len(payload) >= 14:
+            left_pwm = _read_i16_le(payload, 10)
+            right_pwm = _read_i16_le(payload, 12)
+            pwm_part = f" pwm=({left_pwm},{right_pwm})"
+        return f"enc_counts left={left} right={right}{speed_part}{pwm_part}"
 
     if func == FUNC_IMU_BUNDLE and len(payload) >= 18:
         ax = _read_i16_le(payload, 0)
@@ -169,6 +180,8 @@ class SerialControlApp:
         self._plot_line_target_r = None
         self._plot_line_actual_l = None
         self._plot_line_actual_r = None
+        self._plot_line_pwm_l = None
+        self._plot_line_pwm_r = None
         self._plot_lines = {}
         self._plot_line_colors = {}
         self._plot_fade_jobs = {}
@@ -184,19 +197,28 @@ class SerialControlApp:
         self._plot_actual_t = deque(maxlen=3000)
         self._plot_actual_l = deque(maxlen=3000)
         self._plot_actual_r = deque(maxlen=3000)
+        self._plot_pwm_t = deque(maxlen=3000)
+        self._plot_pwm_l = deque(maxlen=3000)
+        self._plot_pwm_r = deque(maxlen=3000)
         self._plot_var_target_l = tk.BooleanVar(value=True)
         self._plot_var_target_r = tk.BooleanVar(value=True)
         self._plot_var_actual_l = tk.BooleanVar(value=True)
         self._plot_var_actual_r = tk.BooleanVar(value=True)
+        self._plot_var_pwm_l = tk.BooleanVar(value=True)
+        self._plot_var_pwm_r = tk.BooleanVar(value=True)
         self._plot_chk_target_l = None
         self._plot_chk_target_r = None
         self._plot_chk_actual_l = None
         self._plot_chk_actual_r = None
+        self._plot_chk_pwm_l = None
+        self._plot_chk_pwm_r = None
         self._plot_lbl_t = None
         self._plot_lbl_target_l = None
         self._plot_lbl_target_r = None
         self._plot_lbl_actual_l = None
         self._plot_lbl_actual_r = None
+        self._plot_lbl_pwm_l = None
+        self._plot_lbl_pwm_r = None
 
         self.var_port = tk.StringVar(value="")
         self.var_baud = tk.StringVar(value="115200")
@@ -204,6 +226,9 @@ class SerialControlApp:
         self.var_left = tk.StringVar(value="0")
         self.var_right = tk.StringVar(value="0")
         self.var_repeat_ms = tk.StringVar(value="200")
+        self.var_pid_kp = tk.StringVar(value="1.2")
+        self.var_pid_ki = tk.StringVar(value="0.55")
+        self.var_pid_kd = tk.StringVar(value="0.0")
 
         self._build_ui()
         self._refresh_ports()
@@ -268,6 +293,20 @@ class SerialControlApp:
         btns2 = ttk.Frame(left)
         btns2.grid(row=row, column=0, columnspan=3, sticky="w", pady=(6, 0))
         ttk.Button(btns2, text="发送停止", command=self._send_stop).grid(row=0, column=0)
+
+        row += 1
+        pid_frame = ttk.LabelFrame(left, text="PID_control")
+        pid_frame.grid(row=row, column=0, columnspan=3, sticky="we", pady=(10, 0))
+        pid_frame.columnconfigure(1, weight=1)
+        pid_frame.columnconfigure(3, weight=1)
+        pid_frame.columnconfigure(5, weight=1)
+        ttk.Label(pid_frame, text="Kp").grid(row=0, column=0, sticky="w", padx=(6, 0), pady=6)
+        ttk.Entry(pid_frame, textvariable=self.var_pid_kp, width=8).grid(row=0, column=1, sticky="we", padx=(4, 8), pady=6)
+        ttk.Label(pid_frame, text="Ki").grid(row=0, column=2, sticky="w", pady=6)
+        ttk.Entry(pid_frame, textvariable=self.var_pid_ki, width=8).grid(row=0, column=3, sticky="we", padx=(4, 8), pady=6)
+        ttk.Label(pid_frame, text="Kd").grid(row=0, column=4, sticky="w", pady=6)
+        ttk.Entry(pid_frame, textvariable=self.var_pid_kd, width=8).grid(row=0, column=5, sticky="we", padx=(4, 8), pady=6)
+        ttk.Button(pid_frame, text="发送PID", command=self._send_pid_control).grid(row=0, column=6, padx=(0, 6), pady=6)
 
         row += 1
         ttk.Label(left, text="发送帧(HEX)").grid(row=row, column=0, sticky="w", pady=(10, 0))
@@ -459,7 +498,13 @@ class SerialControlApp:
 
             self._last_counts = (left, right)
             self._last_counts_t = now
-            return f"enc_counts left={left} right={right}{speed_part}"
+            pwm_part = ""
+            if len(payload) >= 14:
+                pwm_l = _read_i16_le(payload, 10)
+                pwm_r = _read_i16_le(payload, 12)
+                pwm_part = f" pwm=({pwm_l},{pwm_r})"
+                self._record_pwm(pwm_l, pwm_r, now)
+            return f"enc_counts left={left} right={right}{speed_part}{pwm_part}"
 
         return _parse_frame(frame)
 
@@ -485,6 +530,14 @@ class SerialControlApp:
         self._plot_actual_t.append(t)
         self._plot_actual_l.append(left_cm_s)
         self._plot_actual_r.append(right_cm_s)
+
+    def _record_pwm(self, left_pwm: int, right_pwm: int, now: float | None = None) -> None:
+        if now is None:
+            now = time.monotonic()
+        t = now - self._plot_t0
+        self._plot_pwm_t.append(t)
+        self._plot_pwm_l.append(left_pwm)
+        self._plot_pwm_r.append(right_pwm)
 
     def _show_plot(self) -> None:
         if self._plot_frame is None:
@@ -545,6 +598,8 @@ class SerialControlApp:
         (line_tr,) = ax.plot([], [], linestyle="--", linewidth=1.5, label="target R")
         (line_al,) = ax.plot([], [], linewidth=2.0, label="actual L")
         (line_ar,) = ax.plot([], [], linewidth=2.0, label="actual R")
+        (line_pl,) = ax.plot([], [], linestyle=":", linewidth=1.8, label="pwm L")
+        (line_pr,) = ax.plot([], [], linestyle=":", linewidth=1.8, label="pwm R")
 
         canvas = FigureCanvasTkAgg(fig, master=self._plot_canvas_host)
         canvas.get_tk_widget().pack(fill="both", expand=True)
@@ -566,11 +621,15 @@ class SerialControlApp:
         self._plot_line_target_r = line_tr
         self._plot_line_actual_l = line_al
         self._plot_line_actual_r = line_ar
+        self._plot_line_pwm_l = line_pl
+        self._plot_line_pwm_r = line_pr
         self._plot_lines = {
             "target_l": line_tl,
             "target_r": line_tr,
             "actual_l": line_al,
             "actual_r": line_ar,
+            "pwm_l": line_pl,
+            "pwm_r": line_pr,
         }
         self._plot_line_colors = {k: v.get_color() for k, v in self._plot_lines.items()}
         self._plot_tip = tip
@@ -606,6 +665,10 @@ class SerialControlApp:
         self._plot_lbl_actual_l.pack(anchor="w", pady=(6, 0))
         self._plot_lbl_actual_r = ttk.Label(self._plot_right, text="actual R: -")
         self._plot_lbl_actual_r.pack(anchor="w", pady=(6, 0))
+        self._plot_lbl_pwm_l = ttk.Label(self._plot_right, text="pwm L: -")
+        self._plot_lbl_pwm_l.pack(anchor="w", pady=(6, 0))
+        self._plot_lbl_pwm_r = ttk.Label(self._plot_right, text="pwm R: -")
+        self._plot_lbl_pwm_r.pack(anchor="w", pady=(6, 0))
 
     def _nearest_value(self, t_list: list[float], y_list: list[float], t: float) -> float | None:
         if not t_list:
@@ -635,11 +698,16 @@ class SerialControlApp:
         al_t = list(self._plot_actual_t)
         al_y = list(self._plot_actual_l)
         ar_y = list(self._plot_actual_r)
+        pwm_t = list(self._plot_pwm_t)
+        pwm_l_y = list(self._plot_pwm_l)
+        pwm_r_y = list(self._plot_pwm_r)
 
         v_tl = self._nearest_value(tl_t, tl_y, t) if self._plot_var_target_l.get() else None
         v_tr = self._nearest_value(tl_t, tr_y, t) if self._plot_var_target_r.get() else None
         v_al = self._nearest_value(al_t, al_y, t) if self._plot_var_actual_l.get() else None
         v_ar = self._nearest_value(al_t, ar_y, t) if self._plot_var_actual_r.get() else None
+        v_pl = self._nearest_value(pwm_t, pwm_l_y, t) if self._plot_var_pwm_l.get() else None
+        v_pr = self._nearest_value(pwm_t, pwm_r_y, t) if self._plot_var_pwm_r.get() else None
 
         if self._plot_lbl_t is not None:
             self._plot_lbl_t.configure(text=f"t: {t:.2f} s")
@@ -651,6 +719,10 @@ class SerialControlApp:
             self._plot_lbl_actual_l.configure(text=("actual L: -" if v_al is None else f"actual L: {v_al:.2f} cm/s"))
         if self._plot_lbl_actual_r is not None:
             self._plot_lbl_actual_r.configure(text=("actual R: -" if v_ar is None else f"actual R: {v_ar:.2f} cm/s"))
+        if self._plot_lbl_pwm_l is not None:
+            self._plot_lbl_pwm_l.configure(text=("pwm L: -" if v_pl is None else f"pwm L: {v_pl:.0f}"))
+        if self._plot_lbl_pwm_r is not None:
+            self._plot_lbl_pwm_r.configure(text=("pwm R: -" if v_pr is None else f"pwm R: {v_pr:.0f}"))
 
         tip_lines = [f"t={t:.2f}s"]
         if v_tl is not None:
@@ -661,6 +733,10 @@ class SerialControlApp:
             tip_lines.append(f"actual L {v_al:.2f}")
         if v_ar is not None:
             tip_lines.append(f"actual R {v_ar:.2f}")
+        if v_pl is not None:
+            tip_lines.append(f"pwm L {v_pl:.0f}")
+        if v_pr is not None:
+            tip_lines.append(f"pwm R {v_pr:.0f}")
 
         self._plot_show_tip("\n".join(tip_lines), event)
 
@@ -759,11 +835,25 @@ class SerialControlApp:
             variable=self._plot_var_actual_r,
             command=self._on_plot_toggle,
         )
+        self._plot_chk_pwm_l = tk.Checkbutton(
+            self._plot_controls,
+            text="pwm L",
+            variable=self._plot_var_pwm_l,
+            command=self._on_plot_toggle,
+        )
+        self._plot_chk_pwm_r = tk.Checkbutton(
+            self._plot_controls,
+            text="pwm R",
+            variable=self._plot_var_pwm_r,
+            command=self._on_plot_toggle,
+        )
 
         self._plot_chk_target_l.pack(side="left", padx=(8, 0))
         self._plot_chk_target_r.pack(side="left", padx=(8, 0))
         self._plot_chk_actual_l.pack(side="left", padx=(8, 0))
         self._plot_chk_actual_r.pack(side="left", padx=(8, 0))
+        self._plot_chk_pwm_l.pack(side="left", padx=(8, 0))
+        self._plot_chk_pwm_r.pack(side="left", padx=(8, 0))
         self._update_plot_control_colors()
 
     def _plot_set_all(self, visible: bool) -> None:
@@ -771,6 +861,8 @@ class SerialControlApp:
         self._plot_var_target_r.set(visible)
         self._plot_var_actual_l.set(visible)
         self._plot_var_actual_r.set(visible)
+        self._plot_var_pwm_l.set(visible)
+        self._plot_var_pwm_r.set(visible)
         self._apply_plot_visibility(smooth=True)
 
     def _on_plot_toggle(self) -> None:
@@ -782,6 +874,8 @@ class SerialControlApp:
             "target_r": bool(self._plot_var_target_r.get()),
             "actual_l": bool(self._plot_var_actual_l.get()),
             "actual_r": bool(self._plot_var_actual_r.get()),
+            "pwm_l": bool(self._plot_var_pwm_l.get()),
+            "pwm_r": bool(self._plot_var_pwm_r.get()),
         }
 
         for key, want_visible in desired.items():
@@ -850,6 +944,8 @@ class SerialControlApp:
             ("target_r", self._plot_chk_target_r),
             ("actual_l", self._plot_chk_actual_l),
             ("actual_r", self._plot_chk_actual_r),
+            ("pwm_l", self._plot_chk_pwm_l),
+            ("pwm_r", self._plot_chk_pwm_r),
         ]
         for key, chk in mapping:
             if chk is None:
@@ -871,6 +967,9 @@ class SerialControlApp:
         al_t = list(self._plot_actual_t)
         al_y = list(self._plot_actual_l)
         ar_y = list(self._plot_actual_r)
+        pwm_t = list(self._plot_pwm_t)
+        pwm_l_y = list(self._plot_pwm_l)
+        pwm_r_y = list(self._plot_pwm_r)
 
         if self._plot_line_target_l is not None:
             self._plot_line_target_l.set_data(tl_t, tl_y)
@@ -880,6 +979,10 @@ class SerialControlApp:
             self._plot_line_actual_l.set_data(al_t, al_y)
         if self._plot_line_actual_r is not None:
             self._plot_line_actual_r.set_data(al_t, ar_y)
+        if self._plot_line_pwm_l is not None:
+            self._plot_line_pwm_l.set_data(pwm_t, pwm_l_y)
+        if self._plot_line_pwm_r is not None:
+            self._plot_line_pwm_r.set_data(pwm_t, pwm_r_y)
 
         ax = self._plot_ax
         if ax is not None:
@@ -897,6 +1000,12 @@ class SerialControlApp:
             if self._plot_line_actual_r is not None and self._plot_line_actual_r.get_visible():
                 all_t += al_t
                 all_y += ar_y
+            if self._plot_line_pwm_l is not None and self._plot_line_pwm_l.get_visible():
+                all_t += pwm_t
+                all_y += pwm_l_y
+            if self._plot_line_pwm_r is not None and self._plot_line_pwm_r.get_visible():
+                all_t += pwm_t
+                all_y += pwm_r_y
             if all_t:
                 t_min = max(0.0, max(all_t) - 20.0)
                 t_max = max(all_t)
@@ -937,6 +1046,18 @@ class SerialControlApp:
         self._record_target_speed(0.0, 0.0)
         frame = build_wheel_speed_frame(0.0, 0.0)
         self._send_frame(frame)
+
+    def _send_pid_control(self) -> None:
+        try:
+            kp = float(self.var_pid_kp.get().strip())
+            ki = float(self.var_pid_ki.get().strip())
+            kd = float(self.var_pid_kd.get().strip())
+            frame = build_pid_control_frame(kp, ki, kd)
+        except Exception as e:
+            messagebox.showerror("PID参数错误", str(e))
+            return
+        self._send_frame(frame)
+        self._log(f"PID_control Kp={kp:.4g} Ki={ki:.4g} Kd={kd:.4g}")
 
     def _repeat_tick(self) -> None:
         self._repeat_job = None

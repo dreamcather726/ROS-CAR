@@ -38,6 +38,8 @@ class KeyboardReader:
 
     def __init__(self):
         self.original_terminal_settings = None
+        self.input_stream = sys.stdin
+        self.should_close_input_stream = False
         self.is_windows = sys.platform.startswith("win")
 
     def __enter__(self):
@@ -47,21 +49,32 @@ class KeyboardReader:
         import termios
         import tty
 
-        self.original_terminal_settings = termios.tcgetattr(sys.stdin)
-        tty.setcbreak(sys.stdin.fileno())
+        if not self.input_stream.isatty():
+            self.input_stream = open("/dev/tty", "r", buffering=1)
+            self.should_close_input_stream = True
+
+        self.original_terminal_settings = termios.tcgetattr(
+            self.input_stream,
+        )
+        tty.setcbreak(self.input_stream.fileno())
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if self.is_windows or self.original_terminal_settings is None:
+        if self.is_windows:
             return
 
-        import termios
+        try:
+            if self.original_terminal_settings is not None:
+                import termios
 
-        termios.tcsetattr(
-            sys.stdin,
-            termios.TCSADRAIN,
-            self.original_terminal_settings,
-        )
+                termios.tcsetattr(
+                    self.input_stream,
+                    termios.TCSADRAIN,
+                    self.original_terminal_settings,
+                )
+        finally:
+            if self.should_close_input_stream:
+                self.input_stream.close()
 
     def read_key(self):
         """Return one key if available, otherwise return None."""
@@ -74,11 +87,11 @@ class KeyboardReader:
 
         import select
 
-        ready_inputs, _, _ = select.select([sys.stdin], [], [], 0.0)
+        ready_inputs, _, _ = select.select([self.input_stream], [], [], 0.0)
         if not ready_inputs:
             return None
 
-        return sys.stdin.read(1).lower()
+        return self.input_stream.read(1).lower()
 
 
 class KeyboardControlNode(Node):

@@ -1,0 +1,15 @@
+ydlidar_node:
+  ros__parameters:
+    port: "/dev/ydlidar"
+    frame_id: "laser_link"
+    baudrate: 230400
+    scan_frequency_hz: 10.0
+    sample_rate: 5
+    min_angle_deg: -180.0
+    max_angle_deg: 180.0
+    min_range_m: 0.08
+    max_range_m: 16.0
+    single_channel: false
+    inverted: false
+    reversion: false
+    intensity: false
