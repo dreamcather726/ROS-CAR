@@ -227,7 +227,7 @@ class SerialControlApp:
         self.var_right = tk.StringVar(value="0")
         self.var_repeat_ms = tk.StringVar(value="200")
         self.var_pid_kp = tk.StringVar(value="1.2")
-        self.var_pid_ki = tk.StringVar(value="0.55")
+        self.var_pid_ki = tk.StringVar(value="0.25")
         self.var_pid_kd = tk.StringVar(value="0.0")
 
         self._build_ui()

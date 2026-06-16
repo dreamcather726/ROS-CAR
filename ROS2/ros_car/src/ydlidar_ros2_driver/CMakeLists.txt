@@ -28,9 +28,10 @@ if(NOT YDLIDAR_SDK_FOUND)
       OR NOT YDLIDAR_SDK_SRC_INCLUDE_DIR
       OR NOT YDLIDAR_SDK_LIBRARY)
     message(FATAL_ERROR
-      "Could not find YDLidar SDK. Run "
-      "`cmake .. -DBUILD_TEST=OFF && make -j4 && sudo make install` "
-      "inside src/my_pkg/third_party/ydlidar_sdk/build first."
+      "Could not find YDLidar SDK headers or library. Install the SDK first "
+      "with `cmake .. -DBUILD_TEST=OFF && make -j4 && sudo make install`, "
+      "then confirm /usr/local/include/src/CYdLidar.h and "
+      "/usr/local/lib/libydlidar_sdk.a exist."
     )
   endif()
 

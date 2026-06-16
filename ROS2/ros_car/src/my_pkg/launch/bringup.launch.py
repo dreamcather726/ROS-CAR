@@ -19,6 +19,8 @@ def generate_launch_description():
     use_lidar = LaunchConfiguration("use_lidar")
     lidar_port = LaunchConfiguration("lidar_port")
     ydlidar_driver_launch = LaunchConfiguration("ydlidar_driver_launch")
+    use_gmapping = LaunchConfiguration("use_gmapping")
+    slam_gmapping_launch = LaunchConfiguration("slam_gmapping_launch")
     tf_params_file = PathJoinSubstitution([
         FindPackageShare("my_pkg"),
         "config",
@@ -28,6 +30,11 @@ def generate_launch_description():
         FindPackageShare("ydlidar_ros2_driver"),
         "launch",
         ydlidar_driver_launch,
+    ])
+    slam_gmapping_launch_file = PathJoinSubstitution([
+        FindPackageShare("slam_gmapping"),
+        "launch",
+        slam_gmapping_launch,
     ])
 
     return LaunchDescription([
@@ -81,6 +88,16 @@ def generate_launch_description():
             default_value="ydlidar_launch.py",
             description="Launch file from ydlidar_ros2_driver.",
         ),
+        DeclareLaunchArgument(
+            "use_gmapping",
+            default_value="false",
+            description="Start slam_gmapping and publish /map.",
+        ),
+        DeclareLaunchArgument(
+            "slam_gmapping_launch",
+            default_value="gmapping_x3_launch.py",
+            description="Launch file from slam_gmapping.",
+        ),
         Node(
             package="my_pkg",
             executable="esp32_bridge_node",
@@ -115,5 +132,9 @@ def generate_launch_description():
             launch_arguments={
                 "port": lidar_port,
             }.items(),
+        ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(slam_gmapping_launch_file),
+            condition=IfCondition(use_gmapping),
         ),
     ])

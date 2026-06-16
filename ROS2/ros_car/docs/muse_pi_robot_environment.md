@@ -15,6 +15,8 @@ The expected source layout is:
 ```text
 ~/ros_car/src/
   my_pkg/
+  openslam_gmapping/
+  slam_gmapping/
   ydlidar_ros2_driver/
 ```
 
@@ -44,10 +46,9 @@ ESP32 `port:=...` value or replug the devices and check again.
 
 ## Install YDLidar SDK
 
-Run once after syncing the source:
+Run once from a YDLidar SDK source directory:
 
 ```bash
-cd ~/ros_car/src/my_pkg/third_party/ydlidar_sdk
 mkdir -p build
 cd build
 cmake .. -DBUILD_TEST=OFF

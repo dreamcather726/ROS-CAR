@@ -9,10 +9,9 @@ This project follows the Yahboom YDLIDAR X3 Pro ROS2 flow:
 
 ## Install SDK
 
-Run this once on Muse Pi:
+Run this once on Muse Pi from a YDLidar SDK source directory:
 
 ```bash
-cd ~/ros_car/src/my_pkg/third_party/ydlidar_sdk
 mkdir -p build
 cd build
 cmake .. -DBUILD_TEST=OFF
@@ -43,6 +42,8 @@ The workspace should look like this after syncing the project:
 ```text
 ~/ros_car/src/
   my_pkg/
+  openslam_gmapping/
+  slam_gmapping/
   ydlidar_ros2_driver/
 ```
 

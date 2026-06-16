@@ -22,7 +22,7 @@ class YdlidarRos2DriverNode : public rclcpp::Node {
     declare_parameter<double>("max_angle_deg", 180.0);
     declare_parameter<double>("min_range_m", 0.08);
     declare_parameter<double>("max_range_m", 16.0);
-    declare_parameter<bool>("fixed_resolution", false);
+    declare_parameter<bool>("fixed_resolution", true);
     declare_parameter<bool>("reversion", false);
     declare_parameter<bool>("inverted", false);
     declare_parameter<bool>("auto_reconnect", true);
@@ -149,7 +149,6 @@ class YdlidarRos2DriverNode : public rclcpp::Node {
     scan_message.header.stamp = buildRosTime(sdk_scan.stamp);
     scan_message.header.frame_id = frame_id_;
     scan_message.angle_min = sdk_scan.config.min_angle;
-    scan_message.angle_max = sdk_scan.config.max_angle;
     scan_message.angle_increment = sdk_scan.config.angle_increment;
     scan_message.time_increment = sdk_scan.config.time_increment;
     scan_message.scan_time = sdk_scan.config.scan_time;
@@ -160,6 +159,8 @@ class YdlidarRos2DriverNode : public rclcpp::Node {
     if (point_count <= 0) {
       return;
     }
+    scan_message.angle_max = scan_message.angle_min +
+      static_cast<float>(point_count - 1) * scan_message.angle_increment;
 
     scan_message.ranges.assign(
       point_count,
@@ -195,7 +196,8 @@ class YdlidarRos2DriverNode : public rclcpp::Node {
     if (scan_config.angle_increment <= 0.0F || angle_range <= 0.0F) {
       return 0;
     }
-    return static_cast<int>(angle_range / scan_config.angle_increment) + 1;
+    return static_cast<int>(
+      std::ceil(angle_range / scan_config.angle_increment)) + 1;
   }
 
   CYdLidar laser_;
