@@ -12,7 +12,7 @@ ydlidar_ros2_driver_node:
     max_range_m: 16.0
     fixed_resolution: true
     reversion: false
-    inverted: true
+    inverted: false
     auto_reconnect: true
     single_channel: true
     intensity: false
