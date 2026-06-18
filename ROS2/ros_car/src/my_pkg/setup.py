@@ -12,11 +12,17 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (
             'share/' + package_name + '/launch',
-            ['launch/bringup.launch.py'],
+            [
+                'launch/bringup.launch.py',
+                'launch/navigation.launch.py',
+            ],
         ),
         (
             'share/' + package_name + '/config',
-            ['config/tf_params.yaml'],
+            [
+                'config/tf_params.yaml',
+                'config/nav2_params.yaml',
+            ],
         ),
     ],
     install_requires=['setuptools', 'pyserial'],
