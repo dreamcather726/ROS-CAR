@@ -14,6 +14,8 @@ setup(
             'share/' + package_name + '/launch',
             [
                 'launch/bringup.launch.py',
+                'launch/live_mapping.launch.py',
+                'launch/live_navigation.launch.py',
                 'launch/navigation.launch.py',
             ],
         ),
