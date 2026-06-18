@@ -271,7 +271,7 @@ Space 或 X: 停止
 
 ## 10. 用 RViz 查看地图
 
-另开终端启动 RViz：
+如果是在 VM 上查看地图，就在 VM 终端启动 RViz2。Muse Pi 只负责发布 `/scan`、`/odom`、TF 和 `/map`，不需要打开 RViz2。
 
 ```bash
 rviz2
@@ -307,7 +307,7 @@ cd ~/ros2_car
 source /opt/ros/humble/setup.bash
 source install/setup.bash
 
-ros2 launch my_pkg live_navigation.launch.py use_rviz:=true
+ros2 launch my_pkg live_navigation.launch.py use_rviz:=false
 ```
 
 启动前应先确认 GMapping 已经发布 `/map`，并且 `map -> odom` TF 正常：
@@ -330,6 +330,12 @@ ros2 lifecycle get /behavior_server
 
 ```text
 active [3]
+```
+
+如果 RViz2 在 VM 上运行，在 VM 终端启动：
+
+```bash
+rviz2
 ```
 
 RViz 中设置：
@@ -355,7 +361,15 @@ ros2 topic echo /cmd_vel
 
 如果 `/plan` 有 `poses`，说明全局路径已经规划出来；如果 `/cmd_vel` 有线速度或角速度输出，说明 Nav2 已经在向底盘发送导航速度。
 
-如果需要单独启动 RViz，也可以把导航命令中的 `use_rviz:=true` 改为 `false`，再手动运行：
+如果还要显示小车 URDF 模型，Muse Pi 上启动底盘时加上 `use_urdf:=true use_urdf_rviz:=false`：
+
+```bash
+ros2 launch my_pkg bringup.launch.py use_lidar:=true use_urdf:=true use_urdf_rviz:=false
+```
+
+VM 上也需要有 `xc_urdf` 包并 source 对应工作区，否则 RViz2 的 `RobotModel` 可能找不到 `package://xc_urdf/meshes/...` 下的 STL 文件。
+
+如果需要单独启动 RViz，手动运行：
 
 ```bash
 rviz2

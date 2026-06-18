@@ -627,14 +627,31 @@ URDF 的好处：
 
 当前 `my_pkg/bringup.launch.py` 已经可以通过 `use_urdf:=true` 启动 `xc_urdf` 中的 `robot_state_publisher`。这个 URDF 主要用于 RViz2 显示车体模型；雷达和 IMU 的 TF 仍由 `tf_tree_node` 发布。
 
-启动方式：
+你的使用方式是 Muse Pi 跑机器人节点，VM 跑 RViz2。Muse Pi 不需要打开 RViz2，只需要发布 URDF、TF、地图、雷达和导航话题。
+
+Muse Pi 上启动：
 
 ```bash
-# 单独显示 URDF 模型
-ros2 launch xc_urdf display.launch.py use_rviz:=true
+ros2 launch my_pkg bringup.launch.py use_lidar:=true use_urdf:=true use_urdf_rviz:=false
+```
 
-# 跟底盘和雷达一起发布 URDF 模型
-ros2 launch my_pkg bringup.launch.py use_lidar:=true use_urdf:=true
+VM 上启动 RViz2：
+
+```bash
+rviz2
+```
+
+VM 上也要有同一份 `xc_urdf` 包并执行过 `source install/setup.bash`。原因是 URDF 里 STL 路径使用 `package://xc_urdf/meshes/...`，RViz2 显示模型时需要在 VM 本地找到这些 mesh 文件。
+
+RViz2 中添加：
+
+```text
+Fixed Frame: map
+Add -> RobotModel
+Add -> TF
+Add -> By topic -> /scan -> LaserScan
+Add -> By topic -> /map -> Map
+Add -> Path -> /plan
 ```
 
 后续如果要继续完善 URDF，建议方向是：
