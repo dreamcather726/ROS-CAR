@@ -298,7 +298,70 @@ ros2 run slam_gmapping slam_gmapping --ros-args -p map_update_interval:=0.5
 ros2 topic hz /map
 ```
 
-## 11. 保存地图
+## 11. 启动实时建图导航
+
+如果需要一边 GMapping 实时建图，一边使用 Nav2 导航，保持前面的底盘、雷达和 GMapping 终端继续运行，再另开一个终端启动导航：
+
+```bash
+cd ~/ros2_car
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+
+ros2 launch my_pkg live_navigation.launch.py use_rviz:=true
+```
+
+启动前应先确认 GMapping 已经发布 `/map`，并且 `map -> odom` TF 正常：
+
+```bash
+ros2 topic hz /map
+ros2 run tf2_ros tf2_echo map odom
+```
+
+Nav2 启动后检查生命周期状态：
+
+```bash
+ros2 lifecycle get /planner_server
+ros2 lifecycle get /controller_server
+ros2 lifecycle get /bt_navigator
+ros2 lifecycle get /behavior_server
+```
+
+正常应显示：
+
+```text
+active [3]
+```
+
+RViz 中设置：
+
+```text
+Fixed Frame: map
+Add -> By topic -> /map -> Map
+Add -> By topic -> /scan -> LaserScan
+Add -> TF
+Add -> Path -> /plan
+Add -> Path -> /plan_smoothed
+Add -> Path -> /local_plan
+Add -> Map -> /global_costmap/costmap
+Add -> Map -> /local_costmap/costmap
+```
+
+在 RViz 顶部工具栏选择 `Nav2 Goal`，在地图上点击目标点。发出目标后可用下面命令验证路径和速度输出：
+
+```bash
+ros2 topic echo /plan --once
+ros2 topic echo /cmd_vel
+```
+
+如果 `/plan` 有 `poses`，说明全局路径已经规划出来；如果 `/cmd_vel` 有线速度或角速度输出，说明 Nav2 已经在向底盘发送导航速度。
+
+如果需要单独启动 RViz，也可以把导航命令中的 `use_rviz:=true` 改为 `false`，再手动运行：
+
+```bash
+rviz2
+```
+
+## 12. 保存地图
 
 地图看起来可用后保存：
 
@@ -313,4 +376,3 @@ ros2 run nav2_map_server map_saver_cli -f ~/ros2_car/maps/first_map
 ~/ros2_car/maps/first_map.yaml
 ~/ros2_car/maps/first_map.pgm
 ```
-

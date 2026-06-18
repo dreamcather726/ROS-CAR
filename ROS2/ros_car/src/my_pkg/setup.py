@@ -17,7 +17,6 @@ setup(
                 'launch/live_mapping.launch.py',
                 'launch/live_navigation.launch.py',
                 'launch/navigation.launch.py',
-                'launch/scan_decay_map.launch.py',
             ],
         ),
         (
@@ -44,10 +43,6 @@ setup(
             (
                 'keyboard_control_node = '
                 'my_pkg.keyboard_control.keyboard_control_node:main'
-            ),
-            (
-                'scan_decay_map_node = '
-                'my_pkg.scan_decay_map.scan_decay_map_node:main'
             ),
         ],
     },

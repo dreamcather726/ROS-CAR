@@ -50,6 +50,7 @@ PRINT_INTERVAL_SEC = 1.0
 DEFAULT_ENABLE_PRINT = False
 DEFAULT_ODOM_PUBLISH_RATE_HZ = 20.0
 DEFAULT_USE_IMU_YAW_FOR_ODOM = True
+DEFAULT_IMU_YAW_SIGN = -1.0
 MAX_WHEEL_SPEED_CM_S = 50.0
 
 
@@ -71,6 +72,7 @@ class Esp32BridgeNode(Node):
             "use_imu_yaw_for_odom",
             DEFAULT_USE_IMU_YAW_FOR_ODOM,
         )
+        self.declare_parameter("imu_yaw_sign", DEFAULT_IMU_YAW_SIGN)
 
         wheel_base_m = self.get_parameter("wheel_base_m").value
         self.wheel_odometry = WheelOdometry(wheel_base_m)
@@ -276,7 +278,10 @@ class Esp32BridgeNode(Node):
         roll = read_int16_le(payload, 12) / 10.0
         pitch = read_int16_le(payload, 14) / 10.0
         yaw = read_int16_le(payload, 16) / 10.0
-        self.latest_imu_yaw = math.radians(yaw)
+        imu_yaw_sign = float(self.get_parameter("imu_yaw_sign").value)
+        corrected_yaw = yaw * imu_yaw_sign
+        corrected_gyro_z = gyro_z * imu_yaw_sign
+        self.latest_imu_yaw = math.radians(corrected_yaw)
 
         stamp = self.get_clock().now().to_msg()
         self.imu_raw_pub.publish(
@@ -298,10 +303,10 @@ class Esp32BridgeNode(Node):
                 accel_z,
                 gyro_x,
                 gyro_y,
-                gyro_z,
+                corrected_gyro_z,
                 roll,
                 pitch,
-                yaw,
+                corrected_yaw,
             )
         )
 
@@ -315,7 +320,7 @@ class Esp32BridgeNode(Node):
             "imu: "
             f"accel=({accel_x},{accel_y},{accel_z}), "
             f"gyro=({gyro_x},{gyro_y},{gyro_z}), "
-            f"rpy=({roll:.1f},{pitch:.1f},{yaw:.1f})deg"
+            f"rpy=({roll:.1f},{pitch:.1f},{corrected_yaw:.1f})deg"
         )
 
     def get_odom_imu_yaw(self):

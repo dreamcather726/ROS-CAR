@@ -4,6 +4,7 @@ from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 
@@ -15,12 +16,15 @@ def generate_launch_description():
     enable_print = LaunchConfiguration("enable_print")
     odom_publish_rate_hz = LaunchConfiguration("odom_publish_rate_hz")
     use_imu_yaw_for_odom = LaunchConfiguration("use_imu_yaw_for_odom")
+    imu_yaw_sign = LaunchConfiguration("imu_yaw_sign")
     use_keyboard_control = LaunchConfiguration("use_keyboard_control")
     use_lidar = LaunchConfiguration("use_lidar")
     lidar_port = LaunchConfiguration("lidar_port")
     ydlidar_driver_launch = LaunchConfiguration("ydlidar_driver_launch")
     use_gmapping = LaunchConfiguration("use_gmapping")
     slam_gmapping_launch = LaunchConfiguration("slam_gmapping_launch")
+    use_urdf = LaunchConfiguration("use_urdf")
+    use_urdf_rviz = LaunchConfiguration("use_urdf_rviz")
     tf_params_file = PathJoinSubstitution([
         FindPackageShare("my_pkg"),
         "config",
@@ -35,6 +39,11 @@ def generate_launch_description():
         FindPackageShare("slam_gmapping"),
         "launch",
         slam_gmapping_launch,
+    ])
+    xc_urdf_launch_file = PathJoinSubstitution([
+        FindPackageShare("xc_urdf"),
+        "launch",
+        "display.launch.py",
     ])
 
     return LaunchDescription([
@@ -69,6 +78,11 @@ def generate_launch_description():
             description="Use ESP32 resolved IMU yaw to correct /odom yaw.",
         ),
         DeclareLaunchArgument(
+            "imu_yaw_sign",
+            default_value="-1.0",
+            description="IMU yaw sign used to match the ROS yaw direction.",
+        ),
+        DeclareLaunchArgument(
             "use_keyboard_control",
             default_value="false",
             description="Start keyboard_control_node for W/A/S/D teleop.",
@@ -98,6 +112,16 @@ def generate_launch_description():
             default_value="gmapping_x3_launch.py",
             description="Launch file from slam_gmapping.",
         ),
+        DeclareLaunchArgument(
+            "use_urdf",
+            default_value="false",
+            description="Publish the XC car URDF model for RViz2.",
+        ),
+        DeclareLaunchArgument(
+            "use_urdf_rviz",
+            default_value="false",
+            description="Start RViz2 from the xc_urdf display launch.",
+        ),
         Node(
             package="my_pkg",
             executable="esp32_bridge_node",
@@ -110,6 +134,10 @@ def generate_launch_description():
                 "enable_print": enable_print,
                 "odom_publish_rate_hz": odom_publish_rate_hz,
                 "use_imu_yaw_for_odom": use_imu_yaw_for_odom,
+                "imu_yaw_sign": ParameterValue(
+                    imu_yaw_sign,
+                    value_type=float,
+                ),
             }],
         ),
         Node(
@@ -136,5 +164,12 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(slam_gmapping_launch_file),
             condition=IfCondition(use_gmapping),
+        ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(xc_urdf_launch_file),
+            condition=IfCondition(use_urdf),
+            launch_arguments={
+                "use_rviz": use_urdf_rviz,
+            }.items(),
         ),
     ])
