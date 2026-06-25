@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <motor_driver.h>
 #include <wheel_encoder.h>
+#include <arm_servo.h>
+#include <arm_wifi_control.h>
 #include "speed_pid.h"
 #include "serial_sender.h"
 #include "serial_receive.h"
@@ -23,6 +25,9 @@ static int16_t clamp_speed_cm_s_x100(float speed_cm_s);// 速度转换为 int16�
 
 // 是否每秒打印一次调试信息
 static constexpr bool DEBUG_SENSOR_PRINT = false;
+
+static ArmServo armServo;
+static ArmWifiControl armWifiControl;
 
 // PID 控制器（左右轮各一套）
 static PID left_speed_pid;
@@ -60,6 +65,9 @@ void setup()
 {
   Serial.begin(115200);
 
+  armServo.begin();
+  armWifiControl.begin(armServo);
+
   // 底盘初始化
   wheel_encoder_init();
   wheel_encoder_speed_init();
@@ -85,14 +93,26 @@ void setup()
 void loop()
 {
   const uint32_t now_ms = millis();
+  armServo.update();
+  armWifiControl.update();
+
+  if (armWifiControl.isSpeedLimited()) {
+    armWifiControl.limitTargetSpeeds(&target_left_speed_cm_s, &target_right_speed_cm_s);
+  }
+
   serial_receive_update(Serial);
   SerialReceiveFrame received_frame;
   while (serial_receive_take_frame(&received_frame)) {
     if (received_frame.func == CMD_FUNC_WHEEL_SPEED && received_frame.payload_len >= 4) {
       const int16_t left_speed_raw_x100 = read_i16_le(&received_frame.payload[0]);
       const int16_t right_speed_raw_x100 = read_i16_le(&received_frame.payload[2]);
-      target_left_speed_cm_s = constrain(static_cast<float>(left_speed_raw_x100) / 100.0f, -CMD_SPEED_MAX_CM_S, CMD_SPEED_MAX_CM_S);
-      target_right_speed_cm_s = constrain(static_cast<float>(right_speed_raw_x100) / 100.0f, -CMD_SPEED_MAX_CM_S, CMD_SPEED_MAX_CM_S);
+      const float speed_limit_cm_s = armWifiControl.isSpeedLimited() ? armWifiControl.getSpeedLimitCmS() : CMD_SPEED_MAX_CM_S;
+      target_left_speed_cm_s = constrain(static_cast<float>(left_speed_raw_x100) / 100.0f,
+                                         -speed_limit_cm_s,
+                                         speed_limit_cm_s);
+      target_right_speed_cm_s = constrain(static_cast<float>(right_speed_raw_x100) / 100.0f,
+                                          -speed_limit_cm_s,
+                                          speed_limit_cm_s);
       last_speed_command_ms = now_ms;
       has_speed_command_timed_out = false;
     } 
@@ -129,6 +149,10 @@ void loop()
     latest_left_encoder_count = left_encoder_count;
     latest_right_encoder_count = right_encoder_count;
     if (is_speed_updated) {
+      if (armWifiControl.isSpeedLimited()) {
+        armWifiControl.limitTargetSpeeds(&target_left_speed_cm_s, &target_right_speed_cm_s);
+      }
+
       latest_left_speed_cm_s = left_speed_cm_s;
       latest_right_speed_cm_s = right_speed_cm_s;
       if (fabs(target_left_speed_cm_s) < 0.01) PID_Clear(&left_speed_pid);
