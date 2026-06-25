@@ -7,6 +7,7 @@ static constexpr char ARM_WIFI_AP_SSID[] = "ROS-CAR-Arm";
 static constexpr char ARM_WIFI_AP_PASSWORD[] = "12345678";
 static constexpr uint16_t ARM_WIFI_UDP_PORT = 8888;
 static constexpr uint32_t ARM_WIFI_UDP_TIMEOUT_MS = 1500;
+static constexpr uint32_t ARM_WIFI_STA_TIMEOUT_MS = 8000;
 static constexpr float NORMAL_SPEED_LIMIT_CM_S = 80.0f;
 
 ArmWifiControl::ArmWifiControl()
@@ -14,12 +15,11 @@ ArmWifiControl::ArmWifiControl()
 {
 }
 
-void ArmWifiControl::begin(ArmServo &armServo)
+void ArmWifiControl::begin(ArmServo &armServo, const char *stationSsid, const char *stationPassword)
 {
   controlledArmServo = &armServo;
 
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP(ARM_WIFI_AP_SSID, ARM_WIFI_AP_PASSWORD);
+  startWifi(stationSsid, stationPassword);
 
   server.on("/", HTTP_GET, [this]() { handleRoot(); });
   server.on("/status", HTTP_GET, [this]() { handleStatus(); });
@@ -33,12 +33,10 @@ void ArmWifiControl::begin(ArmServo &armServo)
   server.begin();
   udp.begin(ARM_WIFI_UDP_PORT);
 
-  Serial.print("Arm WiFi SSID: ");
-  Serial.println(ARM_WIFI_AP_SSID);
   Serial.print("Arm WiFi page: http://");
-  Serial.println(WiFi.softAPIP());
+  Serial.println(controlIp);
   Serial.print("PyBullet UDP target: ");
-  Serial.print(WiFi.softAPIP());
+  Serial.print(controlIp);
   Serial.print(":");
   Serial.println(ARM_WIFI_UDP_PORT);
 }
@@ -72,6 +70,59 @@ void ArmWifiControl::limitTargetSpeeds(float *leftSpeedCmS, float *rightSpeedCmS
                                -ARM_WIFI_SPEED_LIMIT_CM_S,
                                ARM_WIFI_SPEED_LIMIT_CM_S);
   }
+}
+
+void ArmWifiControl::startWifi(const char *stationSsid, const char *stationPassword)
+{
+  if (connectStation(stationSsid, stationPassword)) {
+    return;
+  }
+
+  startFallbackAccessPoint();
+}
+
+bool ArmWifiControl::connectStation(const char *stationSsid, const char *stationPassword)
+{
+  if (stationSsid == nullptr || stationSsid[0] == '\0') {
+    return false;
+  }
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(stationSsid, stationPassword);
+
+  Serial.print("Connecting arm WiFi to LAN SSID: ");
+  Serial.println(stationSsid);
+  const uint32_t startMs = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - startMs < ARM_WIFI_STA_TIMEOUT_MS) {
+    delay(250);
+    Serial.print(".");
+  }
+  Serial.println();
+
+  if (WiFi.status() != WL_CONNECTED) {
+    WiFi.disconnect(true);
+    Serial.println("LAN WiFi failed, fallback AP will start");
+    return false;
+  }
+
+  controlIp = WiFi.localIP();
+  isAccessPointMode = false;
+  Serial.print("Arm WiFi LAN connected: ");
+  Serial.println(controlIp);
+  return true;
+}
+
+void ArmWifiControl::startFallbackAccessPoint()
+{
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(ARM_WIFI_AP_SSID, ARM_WIFI_AP_PASSWORD);
+  controlIp = WiFi.softAPIP();
+  isAccessPointMode = true;
+
+  Serial.print("Arm fallback AP SSID: ");
+  Serial.println(ARM_WIFI_AP_SSID);
+  Serial.print("Arm fallback AP password: ");
+  Serial.println(ARM_WIFI_AP_PASSWORD);
 }
 
 void ArmWifiControl::handleUdpPacket()
@@ -208,14 +259,19 @@ void ArmWifiControl::replyUdp(const String &message)
 
 void ArmWifiControl::handleRoot()
 {
-  const String html =
+  String html =
       "<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>"
       "<title>ROS-CAR Arm</title></head><body>"
       "<h2>ROS-CAR Arm WiFi</h2>"
-      "<p>PyBullet UDP target: 192.168.4.1:8888</p>"
-      "<p>Commands: movej:90,0,180,130,90 / reset / stop / status</p>"
-      "<p><a href='/status'>Status JSON</a></p>"
-      "</body></html>";
+      "<p>Mode: ";
+  html += isAccessPointMode ? "Fallback AP" : "LAN";
+  html += "</p><p>PyBullet UDP target: ";
+  html += controlIp.toString();
+  html += ":";
+  html += String(ARM_WIFI_UDP_PORT);
+  html += "</p><p>Commands: movej:90,0,180,130,90 / reset / stop / status</p>"
+          "<p><a href='/status'>Status JSON</a></p>"
+          "</body></html>";
   server.send(200, "text/html", html);
 }
 
@@ -287,6 +343,11 @@ String ArmWifiControl::buildStatusJson() const
   json += (controlledArmServo != nullptr && controlledArmServo->isBusy()) ? "true" : "false";
   json += ",\"udpActive\":";
   json += isUdpSessionActive ? "true" : "false";
+  json += ",\"wifiMode\":\"";
+  json += isAccessPointMode ? "ap" : "sta";
+  json += "\",\"ip\":\"";
+  json += controlIp.toString();
+  json += "\"";
   json += ",\"speedLimitCmS\":";
   json += String(isSpeedLimited() ? ARM_WIFI_SPEED_LIMIT_CM_S : NORMAL_SPEED_LIMIT_CM_S);
   json += ",\"current\":[";

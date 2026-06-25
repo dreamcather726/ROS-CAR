@@ -19,6 +19,8 @@ static constexpr uint8_t CMD_FUNC_WHEEL_SPEED = 0x10;
 static constexpr float CMD_SPEED_MAX_CM_S = 80.0f;
 static constexpr uint32_t CMD_SPEED_TIMEOUT_MS = 500;
 static constexpr int PWM_DEADBAND = 5;
+static constexpr char ARM_WIFI_STA_SSID[] = "具身智能机器人-2.4G";
+static constexpr char ARM_WIFI_STA_PASSWORD[] = "jushen123";
 
 static int16_t read_i16_le(const uint8_t *bytes);// 读取 16 位有符号整数，小端序
 static int16_t clamp_speed_cm_s_x100(float speed_cm_s);// 速度转换为 int16，单位 cm/s * 100
@@ -66,7 +68,7 @@ void setup()
   Serial.begin(115200);
 
   armServo.begin();
-  armWifiControl.begin(armServo);
+  armWifiControl.begin(armServo, ARM_WIFI_STA_SSID, ARM_WIFI_STA_PASSWORD);
 
   // 底盘初始化
   wheel_encoder_init();

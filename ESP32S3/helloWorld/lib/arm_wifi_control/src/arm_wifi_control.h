@@ -11,7 +11,7 @@ class ArmWifiControl {
 public:
   ArmWifiControl();
 
-  void begin(ArmServo &armServo);
+  void begin(ArmServo &armServo, const char *stationSsid, const char *stationPassword);
   void update();
 
   bool isSpeedLimited() const;
@@ -19,6 +19,9 @@ public:
   void limitTargetSpeeds(float *leftSpeedCmS, float *rightSpeedCmS) const;
 
 private:
+  void startWifi(const char *stationSsid, const char *stationPassword);
+  bool connectStation(const char *stationSsid, const char *stationPassword);
+  void startFallbackAccessPoint();
   void handleUdpPacket();
   void checkUdpTimeout();
   void handleUdpCommand(const char *command);
@@ -41,6 +44,8 @@ private:
   ArmServo *controlledArmServo = nullptr;
   WebServer server;
   WiFiUDP udp;
+  IPAddress controlIp;
+  bool isAccessPointMode = false;
   bool isArmControlActive = false;
   bool isUdpSessionActive = false;
   uint32_t lastUdpPacketMs = 0;
