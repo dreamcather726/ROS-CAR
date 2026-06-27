@@ -1,0 +1,20 @@
+ydlidar_ros2_driver_node:
+  ros__parameters:
+    port: "/dev/ydlidar"
+    frame_id: "laser_link"
+    baudrate: 115200
+    sample_rate: 3
+    abnormal_check_count: 4
+    scan_frequency_hz: 10.0
+    min_angle_deg: -180.0
+    max_angle_deg: 180.0
+    min_range_m: 0.08
+    max_range_m: 16.0
+    fixed_resolution: true
+    reversion: false
+    inverted: false
+    auto_reconnect: true
+    single_channel: true
+    intensity: false
+    support_motor_dtr: true
+    support_heartbeat: false

@@ -8,9 +8,10 @@ esp32_bridge_node
 4. 发布 /odom、/imu/rawdata、/imu/data 和 /esp32/status。
 
 运行：
-ros2 run my_pkg esp32_bridge_node --ros-args -p port:=/dev/ttyUSB0
+ros2 run my_pkg esp32_bridge_node --ros-args -p port:=/dev/ttyUSB1
 """
 
+import math
 import struct
 import time
 
@@ -41,12 +42,15 @@ from my_pkg.esp32_bridge.serial_protocol import (
 )
 
 
-DEFAULT_PORT = "/dev/ttyUSB0"
+DEFAULT_PORT = "/dev/ttyUSB1"
 DEFAULT_BAUDRATE = 115200
 WHEEL_BASE_M = 0.18
 RECONNECT_INTERVAL_SEC = 5.0
 PRINT_INTERVAL_SEC = 1.0
 DEFAULT_ENABLE_PRINT = False
+DEFAULT_ODOM_PUBLISH_RATE_HZ = 20.0
+DEFAULT_USE_IMU_YAW_FOR_ODOM = True
+DEFAULT_IMU_YAW_SIGN = -1.0
 MAX_WHEEL_SPEED_CM_S = 50.0
 
 
@@ -60,6 +64,15 @@ class Esp32BridgeNode(Node):
         self.declare_parameter("baudrate", DEFAULT_BAUDRATE)
         self.declare_parameter("wheel_base_m", WHEEL_BASE_M)
         self.declare_parameter("enable_print", DEFAULT_ENABLE_PRINT)
+        self.declare_parameter(
+            "odom_publish_rate_hz",
+            DEFAULT_ODOM_PUBLISH_RATE_HZ,
+        )
+        self.declare_parameter(
+            "use_imu_yaw_for_odom",
+            DEFAULT_USE_IMU_YAW_FOR_ODOM,
+        )
+        self.declare_parameter("imu_yaw_sign", DEFAULT_IMU_YAW_SIGN)
 
         wheel_base_m = self.get_parameter("wheel_base_m").value
         self.wheel_odometry = WheelOdometry(wheel_base_m)
@@ -75,6 +88,8 @@ class Esp32BridgeNode(Node):
         self.last_imu_print_time = 0.0
         self.last_other_print_time = 0.0
         self.last_cmd_vel_print_time = 0.0
+        self.last_odom_publish_time = 0.0
+        self.latest_imu_yaw = None
 
         self.open_serial_port()
 
@@ -228,12 +243,24 @@ class Esp32BridgeNode(Node):
         )
 
     def publish_odom(self, left_speed_cm_s, right_speed_cm_s):
-        """Publish /odom from wheel speeds."""
+        """Update odometry from wheel speeds and publish at a limited rate."""
         odom_msg = self.wheel_odometry.build_message(
             left_speed_cm_s,
             right_speed_cm_s,
             self.get_clock().now(),
+            self.get_odom_imu_yaw(),
         )
+
+        odom_publish_rate_hz = float(
+            self.get_parameter("odom_publish_rate_hz").value
+        )
+        if odom_publish_rate_hz > 0.0:
+            now = time.monotonic()
+            publish_interval_sec = 1.0 / odom_publish_rate_hz
+            if now - self.last_odom_publish_time < publish_interval_sec:
+                return
+            self.last_odom_publish_time = now
+
         self.odom_pub.publish(odom_msg)
 
     def handle_imu_message(self, payload):
@@ -251,6 +278,10 @@ class Esp32BridgeNode(Node):
         roll = read_int16_le(payload, 12) / 10.0
         pitch = read_int16_le(payload, 14) / 10.0
         yaw = read_int16_le(payload, 16) / 10.0
+        imu_yaw_sign = float(self.get_parameter("imu_yaw_sign").value)
+        corrected_yaw = yaw * imu_yaw_sign
+        corrected_gyro_z = gyro_z * imu_yaw_sign
+        self.latest_imu_yaw = math.radians(corrected_yaw)
 
         stamp = self.get_clock().now().to_msg()
         self.imu_raw_pub.publish(
@@ -272,10 +303,10 @@ class Esp32BridgeNode(Node):
                 accel_z,
                 gyro_x,
                 gyro_y,
-                gyro_z,
+                corrected_gyro_z,
                 roll,
                 pitch,
-                yaw,
+                corrected_yaw,
             )
         )
 
@@ -289,8 +320,17 @@ class Esp32BridgeNode(Node):
             "imu: "
             f"accel=({accel_x},{accel_y},{accel_z}), "
             f"gyro=({gyro_x},{gyro_y},{gyro_z}), "
-            f"rpy=({roll:.1f},{pitch:.1f},{yaw:.1f})deg"
+            f"rpy=({roll:.1f},{pitch:.1f},{corrected_yaw:.1f})deg"
         )
+
+    def get_odom_imu_yaw(self):
+        """Return latest IMU yaw when odometry fusion is enabled."""
+        use_imu_yaw_for_odom = self.get_parameter(
+            "use_imu_yaw_for_odom"
+        ).value
+        if not use_imu_yaw_for_odom:
+            return None
+        return self.latest_imu_yaw
 
     def cmd_vel_callback(self, msg):
         """Convert /cmd_vel into ESP32 left and right wheel speed frame."""

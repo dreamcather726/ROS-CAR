@@ -1,36 +1,69 @@
 #include <Arduino.h>
 #include "motor_driver.h"
 
+static void set_motor_pwm_with_dead_time(uint8_t dir_pin,
+                                         uint8_t pwm_pin,
+                                         int pwm,
+                                         bool invert_dir,
+                                         bool *last_forward,
+                                         bool *has_last_forward);
+
 void motor_init()
 {
-  pinMode(MOTOR_DIRA_PIN, OUTPUT);
-  pinMode(MOTOR_DIRB_PIN, OUTPUT);
-  pinMode(MOTOR_PWMA_PIN, OUTPUT);
-  pinMode(MOTOR_PWMB_PIN, OUTPUT);
-  digitalWrite(MOTOR_DIRA_PIN, LOW);
-  digitalWrite(MOTOR_DIRB_PIN, LOW);
+  pinMode(RIGHT_MOTOR_DIR_PIN, OUTPUT);
+  pinMode(LEFT_MOTOR_DIR_PIN, OUTPUT);
+  pinMode(RIGHT_MOTOR_PWM_PIN, OUTPUT);
+  pinMode(LEFT_MOTOR_PWM_PIN, OUTPUT);
+  digitalWrite(RIGHT_MOTOR_DIR_PIN, LOW);
+  digitalWrite(LEFT_MOTOR_DIR_PIN, LOW);
 
-  analogWrite(MOTOR_PWMA_PIN, 0);
-  analogWrite(MOTOR_PWMB_PIN, 0);
+  analogWrite(RIGHT_MOTOR_PWM_PIN, 0);
+  analogWrite(LEFT_MOTOR_PWM_PIN, 0);
 }
 
-void motorA_set(int speed)
+void set_right_motor_pwm(int pwm)
 {
-  speed = constrain(speed, -255, 255);
-  bool forward = (speed >= 0);
-  if (MOTOR_A_INVERT_DIR) forward = !forward;
-  digitalWrite(MOTOR_DIRA_PIN, forward ? HIGH : LOW);
+  static bool last_forward = true;
+  static bool has_last_forward = false;
 
-  analogWrite(MOTOR_PWMA_PIN, abs(speed));
-
+  set_motor_pwm_with_dead_time(RIGHT_MOTOR_DIR_PIN,
+                               RIGHT_MOTOR_PWM_PIN,
+                               pwm,
+                               RIGHT_MOTOR_INVERT_DIR,
+                               &last_forward,
+                               &has_last_forward);
 }
 
-void motorB_set(int speed)
+void set_left_motor_pwm(int pwm)
 {
-  speed = constrain(speed, -255, 255);
-  bool forward = (speed >= 0);
-  if (MOTOR_B_INVERT_DIR) forward = !forward;
-  digitalWrite(MOTOR_DIRB_PIN, forward ? HIGH : LOW);
-  analogWrite(MOTOR_PWMB_PIN, abs(speed));
+  static bool last_forward = true;
+  static bool has_last_forward = false;
+  set_motor_pwm_with_dead_time(LEFT_MOTOR_DIR_PIN,
+                               LEFT_MOTOR_PWM_PIN,
+                               pwm,
+                               LEFT_MOTOR_INVERT_DIR,
+                               &last_forward,
+                               &has_last_forward);
 }
 
+static void set_motor_pwm_with_dead_time(uint8_t dir_pin,
+                                         uint8_t pwm_pin,
+                                         int pwm,
+                                         bool invert_dir,
+                                         bool *last_forward,
+                                         bool *has_last_forward)
+{
+  pwm = constrain(pwm, -255, 255);
+  bool forward = (pwm >= 0);
+  if (invert_dir) forward = !forward;
+
+  if (*has_last_forward && forward != *last_forward) {
+    analogWrite(pwm_pin, 0);
+    delayMicroseconds(MOTOR_DIRECTION_SWITCH_DELAY_US);
+  }
+
+  digitalWrite(dir_pin, forward ? HIGH : LOW);
+  analogWrite(pwm_pin, abs(pwm));
+  *last_forward = forward;
+  *has_last_forward = true;
+}
